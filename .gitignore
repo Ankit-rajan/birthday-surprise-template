@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+!.env.demo
+*.log
+.DS_Store
+.vercel/
+
+# extra safety for a personal-gift repo
+backend/.env
+*.pem
+*.key
+frontend/public/music/our-song.*
+frontend/public/music/wish-voice.*
+Thumbs.db
