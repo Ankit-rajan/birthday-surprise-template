@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
-/** Wraps an admin API call with busy/error/ok state. A 401 means the admin session expired. */
-export function useAdminCall(onExpired) {
+/** Wraps a dashboard API call with busy/error/ok state. A 401 means the session expired (the auth context then sends the person to login). */
+export function useApiCall(onExpired) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');

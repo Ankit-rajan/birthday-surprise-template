@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useSiteFx } from '../hooks/SiteFx.jsx';
 
 const PALETTE = ['#8c1d3a', '#b3294f', '#d9728a', '#e8a3b0', '#f4cfd3'];
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -7,7 +8,7 @@ const rand = (a, b) => a + Math.random() * (b - a);
  * Canvas of drifting rose petals and softly glowing gold particles.
  * Pauses when the tab is hidden; renders a single still frame for reduced-motion users.
  */
-export default function Petals({ density = 1, glow = true, className = '' }) {
+function PetalsCanvas({ density = 1, glow = true, className = '' }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -132,4 +133,9 @@ export default function Petals({ density = 1, glow = true, className = '' }) {
   }, [density, glow]);
 
   return <canvas ref={ref} aria-hidden="true" className={`pointer-events-none absolute inset-0 h-full w-full ${className}`} />;
+}
+
+export default function Petals(props) {
+  const { petals } = useSiteFx();
+  return petals ? <PetalsCanvas {...props} /> : null;
 }

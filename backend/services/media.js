@@ -2,13 +2,25 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import mongoose from 'mongoose';
 import sharp from 'sharp';
+import { env } from '../config/env.js';
 import { getBucket } from '../config/db.js';
 import { MediaAsset } from '../models/MediaAsset.js';
 import { HttpError } from '../utils/httpError.js';
 
 const MB = 1024 * 1024;
 const MAX_BYTES = { image: 25 * MB, audio: 20 * MB, video: 200 * MB };
+const QUOTA_BYTES = env.maxUserStorageMb * MB;
+
+/** Total bytes (full size + thumbnails) one customer currently stores. */
+export async function storageUsed(ownerId) {
+  const [row] = await MediaAsset.aggregate([
+    { $match: { owner: new mongoose.Types.ObjectId(String(ownerId)) } },
+    { $group: { _id: null, bytes: { $sum: { $add: ['$size', '$thumbSize'] } } } },
+  ]);
+  return row?.bytes || 0;
+}
 
 /** Identify a file from its first bytes. We never trust the client-supplied MIME type or extension. */
 function sniff(head) {
@@ -56,8 +68,9 @@ async function uploadBuffer(bucket, buffer, filename, contentType) {
  * Validates, optimises and stores an uploaded temp file in GridFS, then returns the MediaAsset.
  * Images are re-encoded (auto-rotated, EXIF/GPS stripped, resized) and get a thumbnail.
  */
-export async function ingestUpload(file, visibility, allowedKinds) {
+export async function ingestUpload(ownerId, file, visibility, allowedKinds) {
   if (!file) throw new HttpError(400, 'No file uploaded');
+  if (!ownerId) throw new Error('ingestUpload requires an owner');
   try {
     const found = sniff(await readHead(file.path));
     if (found?.kind === 'heic') {
@@ -69,6 +82,9 @@ export async function ingestUpload(file, visibility, allowedKinds) {
     const stat = await fsp.stat(file.path);
     if (stat.size > MAX_BYTES[found.kind]) {
       throw new HttpError(413, `That ${found.kind} is too large (max ${MAX_BYTES[found.kind] / MB} MB).`);
+    }
+    if ((await storageUsed(ownerId)) + stat.size > QUOTA_BYTES) {
+      throw new HttpError(413, `You have reached your ${env.maxUserStorageMb} MB storage limit. Delete a few files and try again.`);
     }
 
     const bucket = getBucket(visibility);
@@ -98,6 +114,7 @@ export async function ingestUpload(file, visibility, allowedKinds) {
       const gridId = await uploadBuffer(bucket, main.data, `${Date.now()}.jpg`, 'image/jpeg');
       const thumbGridId = await uploadBuffer(bucket, thumb, `${Date.now()}-thumb.jpg`, 'image/jpeg');
       return MediaAsset.create({
+        owner: ownerId,
         visibility,
         kind: 'image',
         mime: 'image/jpeg',
@@ -114,6 +131,7 @@ export async function ingestUpload(file, visibility, allowedKinds) {
     const up = bucket.openUploadStream(`${Date.now()}-${found.kind}`, { contentType: found.mime });
     await pipeline(fs.createReadStream(file.path), up);
     return MediaAsset.create({
+      owner: ownerId,
       visibility,
       kind: found.kind,
       mime: found.mime,
@@ -126,10 +144,11 @@ export async function ingestUpload(file, visibility, allowedKinds) {
   }
 }
 
-export async function deleteAsset(assetOrId) {
-  // Accept either a MediaAsset document or an ObjectId (ObjectIds also expose `_id`, so test for a real field).
-  const asset = assetOrId?.gridId ? assetOrId : await MediaAsset.findById(assetOrId);
-  if (!asset) return;
+/** Deletes one asset, but ONLY if it belongs to `ownerId`. Accepts a MediaAsset document or an ObjectId. */
+export async function deleteAsset(ownerId, assetOrId) {
+  // ObjectIds also expose `_id`, so test for a real field to tell the two apart.
+  const asset = assetOrId?.gridId ? assetOrId : await MediaAsset.findOne({ _id: assetOrId, owner: ownerId });
+  if (!asset || String(asset.owner) !== String(ownerId)) return;
   const bucket = getBucket(asset.visibility);
   await bucket.delete(asset.gridId).catch(() => {});
   if (asset.thumbGridId) await bucket.delete(asset.thumbGridId).catch(() => {});
@@ -137,19 +156,20 @@ export async function deleteAsset(assetOrId) {
 }
 
 /** Streams a stored asset with HTTP Range support (needed for video seeking and iOS Safari). */
-export function streamAsset(req, res, asset, { thumb = false } = {}) {
+export function streamAsset(req, res, asset, { thumb = false, forcePrivate = false } = {}) {
   const useThumb = thumb && asset.thumbGridId;
   const gridId = useThumb ? asset.thumbGridId : asset.gridId;
   const size = useThumb ? asset.thumbSize : asset.size;
   const mime = useThumb ? 'image/jpeg' : asset.mime;
-  const isPrivate = asset.visibility === 'private';
+  // Owner previews and private bytes are never cached by shared caches. Published public media may be, briefly.
+  const isPrivate = asset.visibility === 'private' || forcePrivate;
 
   res.set({
     'Content-Type': mime,
     'Accept-Ranges': 'bytes',
     'X-Content-Type-Options': 'nosniff',
     'Content-Disposition': 'inline',
-    'Cache-Control': isPrivate ? 'private, no-store' : 'public, max-age=3600',
+    'Cache-Control': isPrivate ? 'private, no-store' : 'public, max-age=300',
   });
   if (!isPrivate) res.set('Cross-Origin-Resource-Policy', 'cross-origin');
 

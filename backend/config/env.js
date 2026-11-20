@@ -65,5 +65,16 @@ export const env = {
   vaultMaxMinutes: Number(process.env.VAULT_MAX_MINUTES || 60),
   adminIdleMinutes: Number(process.env.ADMIN_IDLE_MINUTES || 30),
   adminMaxHours: Number(process.env.ADMIN_MAX_HOURS || 8),
+  // Customer sessions: sliding idle window + absolute cap. "Remember me" keeps the cookie for the absolute cap.
+  userIdleDays: Number(process.env.USER_IDLE_DAYS || 14),
+  userMaxDays: Number(process.env.USER_MAX_DAYS || 30),
+  registrationOpen: (process.env.REGISTRATION_OPEN ?? 'true') !== 'false',
+  // Per-account upload quota (public + private media together). Atlas free tier is only 512 MB in total.
+  maxUserStorageMb: Number(process.env.MAX_USER_STORAGE_MB || 100),
+  // Used to build password-reset links. Defaults to the first FRONTEND_URL.
+  appUrl: (process.env.APP_URL || (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0]).trim().replace(/\/$/, ''),
+  // Optional. Without SMTP_URL the reset link is only logged in development and never in production.
+  smtpUrl: process.env.SMTP_URL || '',
+  mailFrom: process.env.MAIL_FROM || 'Birthday Surprise <no-reply@example.com>',
   journalKey: loadJournalKey(),
 };

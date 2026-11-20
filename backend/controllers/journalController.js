@@ -3,6 +3,8 @@ import { JournalEntry } from '../models/JournalEntry.js';
 import { encrypt, decrypt } from '../services/crypto.js';
 import { HttpError, asyncHandler, objectId } from '../utils/httpError.js';
 
+// All queries are scoped to req.site.owner (the site in the URL, which the vault session was issued for).
+
 const entrySchema = z.object({
   title: z.string().trim().max(120).optional().default(''),
   body: z.string().trim().min(1, 'Please write something first.').max(20000),
@@ -19,20 +21,23 @@ const serialize = (doc) => ({
 
 /** Both roles (her, him) may read. Newest first. */
 export const listEntries = asyncHandler(async (req, res) => {
-  const docs = await JournalEntry.find().sort({ createdAt: -1 });
+  const docs = await JournalEntry.find({ owner: req.site.owner }).sort({ createdAt: -1 }).limit(500);
   res.json({ entries: docs.map(serialize) });
 });
 
 // create / update / delete are mounted behind requireRole('her') in the router.
 export const createEntry = asyncHandler(async (req, res) => {
   const { title, body } = entrySchema.parse(req.body);
-  const doc = await JournalEntry.create({ titleEnc: encrypt(title), bodyEnc: encrypt(body) });
+  if ((await JournalEntry.countDocuments({ owner: req.site.owner })) >= 500) {
+    throw new HttpError(400, 'The journal is full (500 entries).');
+  }
+  const doc = await JournalEntry.create({ owner: req.site.owner, titleEnc: encrypt(title), bodyEnc: encrypt(body) });
   res.status(201).json({ entry: serialize(doc) });
 });
 
 export const updateEntry = asyncHandler(async (req, res) => {
   const { title, body } = entrySchema.parse(req.body);
-  const doc = await JournalEntry.findById(objectId(req.params.id));
+  const doc = await JournalEntry.findOne({ _id: objectId(req.params.id), owner: req.site.owner });
   if (!doc) throw new HttpError(404, 'Entry not found');
   doc.titleEnc = encrypt(title);
   doc.bodyEnc = encrypt(body);
@@ -41,7 +46,7 @@ export const updateEntry = asyncHandler(async (req, res) => {
 });
 
 export const deleteEntry = asyncHandler(async (req, res) => {
-  const doc = await JournalEntry.findById(objectId(req.params.id));
+  const doc = await JournalEntry.findOne({ _id: objectId(req.params.id), owner: req.site.owner });
   if (!doc) throw new HttpError(404, 'Entry not found');
   await doc.deleteOne();
   res.json({ ok: true });

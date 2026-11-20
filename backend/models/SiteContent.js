@@ -4,9 +4,19 @@ import { DEFAULT_SITE } from '../services/defaults.js';
 const { ObjectId } = mongoose.Schema.Types;
 const d = DEFAULT_SITE;
 
+/**
+ * One birthday website per customer. `owner` is the tenant key: every other content collection
+ * carries the same `owner` field and every query filters on it.
+ */
 const siteContentSchema = new mongoose.Schema(
   {
-    key: { type: String, default: 'main', unique: true },
+    owner: { type: ObjectId, ref: 'User', required: true, unique: true },
+    slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    // Slugs this site used to have. Reserved for the same owner so a shared link can never be taken over.
+    previousSlugs: { type: [String], default: [], index: true },
+    published: { type: Boolean, default: false, index: true },
+    publishedAt: { type: Date, default: null },
+
     siteName: { type: String, default: d.siteName },
     herName: { type: String, default: d.herName },
     birthDate: { type: String, default: d.birthDate },
@@ -34,6 +44,19 @@ const siteContentSchema = new mongoose.Schema(
     music: {
       title: { type: String, default: d.musicTitle },
       asset: { type: ObjectId, ref: 'MediaAsset', default: null },
+    },
+    // Look and feel: cake, falling petals, confetti and the built-in celebration sounds.
+    settings: {
+      cake: {
+        theme: { type: String, enum: ['rose', 'chocolate', 'vanilla', 'berry', 'midnight'], default: 'rose' },
+        candles: { type: Number, min: 1, max: 9, default: 5 },
+        showAge: { type: Boolean, default: true },
+      },
+      effects: {
+        petals: { type: Boolean, default: true },
+        confetti: { type: Boolean, default: true },
+        celebrationSounds: { type: Boolean, default: true },
+      },
     },
   },
   { timestamps: true },

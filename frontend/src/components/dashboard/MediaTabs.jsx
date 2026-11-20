@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../services/api.js';
 import { toDateInput } from '../../utils/format.js';
-import { useAdminCall, Status } from './useAdminCall.jsx';
+import { useApiCall, Status } from './useApiCall.jsx';
 
 function MediaManager({ resource, accept, allowVideo, intro, onExpired }) {
   const [items, setItems] = useState(null);
   const [caption, setCaption] = useState('');
   const [date, setDate] = useState('');
   const fileRef = useRef(null);
-  const { busy, error, ok, run } = useAdminCall(onExpired);
+  const { busy, error, ok, run } = useApiCall(onExpired);
 
   const load = useCallback(() => {
-    run(() => api.admin.list(resource), '').then((r) => r && setItems(r.items));
+    run(() => api.app.list(resource), '').then((r) => r && setItems(r.items));
   }, [run, resource]);
   useEffect(load, [load]);
 
@@ -21,7 +21,7 @@ function MediaManager({ resource, accept, allowVideo, intro, onExpired }) {
     if (!files.length) return;
     for (const file of files) {
       // eslint-disable-next-line no-await-in-loop
-      const r = await run(() => api.admin.create(resource, { caption, date }, file), `Uploaded ${file.name}`);
+      const r = await run(() => api.app.create(resource, { caption, date }, file), `Uploaded ${file.name}`);
       if (r) setItems((list) => [r.item, ...(list || [])]);
       else break;
     }
@@ -30,11 +30,11 @@ function MediaManager({ resource, accept, allowVideo, intro, onExpired }) {
   };
 
   const saveItem = (item, patch) =>
-    run(() => api.admin.update(resource, item.id, patch), 'Saved.').then((r) => r && setItems((l) => l.map((x) => (x.id === item.id ? r.item : x))));
+    run(() => api.app.update(resource, item.id, patch), 'Saved.').then((r) => r && setItems((l) => l.map((x) => (x.id === item.id ? r.item : x))));
 
   const remove = (item) => {
     if (!window.confirm('Delete this permanently?')) return;
-    run(() => api.admin.remove(resource, item.id), 'Deleted.').then((r) => r && setItems((l) => l.filter((x) => x.id !== item.id)));
+    run(() => api.app.remove(resource, item.id), 'Deleted.').then((r) => r && setItems((l) => l.filter((x) => x.id !== item.id)));
   };
 
   return (

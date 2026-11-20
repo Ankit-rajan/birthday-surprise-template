@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, API_BASE, setCsrf, setVaultUnauthorizedHandler } from '../services/api.js';
+import { setCsrf, setVaultUnauthorizedHandler } from '../services/api.js';
 
 const VaultCtx = createContext(null);
 export const useVault = () => useContext(VaultCtx);
@@ -16,7 +16,8 @@ const HEARTBEAT_EVERY_MS = 30_000;
  *   - Closing/reloading the tab sends a beacon that destroys the server session
  *   - A fresh page load always starts locked (and clears any stale server session)
  */
-export function VaultProvider({ children }) {
+export function VaultProvider({ api, hint = '', children }) {
+  // `api` is the vault API of ONE page (see makeVaultApi), or null when the vault is not available (preview).
   const [state, setState] = useState({ status: 'locked', role: null, idleSeconds: DEFAULT_IDLE_SECONDS, notice: '' });
   const [warnSeconds, setWarnSeconds] = useState(null);
 
@@ -26,17 +27,18 @@ export function VaultProvider({ children }) {
     // Hide everything first, then tell the server.
     setState((s) => ({ status: 'locked', role: null, idleSeconds: s.idleSeconds, notice }));
     try {
-      await api.vault.lock();
+      await api?.lock();
     } catch {
       /* the cookie is session-only and the server expires it anyway */
     }
-  }, []);
+  }, [api]);
 
   const unlock = useCallback(async (password, role) => {
-    const result = await api.vault.unlock(password, role);
+    if (!api) throw new Error('The private area is not available here.');
+    const result = await api.unlock(password, role);
     setCsrf('vault', result.csrfToken);
     setState({ status: 'unlocked', role: result.role, idleSeconds: result.idleSeconds || DEFAULT_IDLE_SECONDS, notice: '' });
-  }, []);
+  }, [api]);
 
   // Any 401 from a vault API means the server ended the session.
   useEffect(() => {
@@ -46,21 +48,21 @@ export function VaultProvider({ children }) {
 
   // Fresh page load / refresh => start locked and destroy any leftover server session.
   useEffect(() => {
-    api.vault.lock().catch(() => {});
-  }, []);
+    api?.lock().catch(() => {});
+  }, [api]);
 
   // Closing or reloading the tab destroys the server session (beacons cannot set headers, so /lock needs no CSRF token).
   useEffect(() => {
     const onPageHide = () => {
       try {
-        navigator.sendBeacon?.(`${API_BASE}/vault/lock`);
+        if (api?.lockUrl) navigator.sendBeacon?.(api.lockUrl);
       } catch {
         /* ignore */
       }
     };
     window.addEventListener('pagehide', onPageHide);
     return () => window.removeEventListener('pagehide', onPageHide);
-  }, []);
+  }, [api]);
 
   // Inactivity lock + keep-alive while the person is actually using the vault.
   useEffect(() => {
@@ -73,7 +75,7 @@ export function VaultProvider({ children }) {
       lastActive = Date.now();
       if (Date.now() - lastBeat > HEARTBEAT_EVERY_MS) {
         lastBeat = Date.now();
-        api.vault.heartbeat().catch(() => {});
+        api?.heartbeat().catch(() => {});
       }
     };
     const events = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart', 'wheel'];
@@ -105,11 +107,11 @@ export function VaultProvider({ children }) {
       document.removeEventListener('visibilitychange', onVisible);
       clearInterval(tick);
     };
-  }, [state.status, state.idleSeconds, lock]);
+  }, [state.status, state.idleSeconds, lock, api]);
 
   const value = useMemo(
-    () => ({ ...state, warnSeconds, unlock, lock }),
-    [state, warnSeconds, unlock, lock],
+    () => ({ ...state, warnSeconds, unlock, lock, api, hint }),
+    [state, warnSeconds, unlock, lock, api, hint],
   );
   return <VaultCtx.Provider value={value}>{children}</VaultCtx.Provider>;
 }

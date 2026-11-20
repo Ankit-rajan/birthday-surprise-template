@@ -1,0 +1,202 @@
+{
+  "_note": "Fictional sample (Aanya Sharma and Aarav). Not a real person. Used by the public demo and as an opt-in starter template.",
+  "site": {
+    "siteName": "A Little World Made For Aanya",
+    "herName": "Aanya Sharma",
+    "birthDate": "2000-12-14",
+    "partnerName": "Aarav",
+    "introHeading": "For Aanya, the brightest part of every day.",
+    "introSubtitle": "Aarav made a little world, just for you. Open it when you are ready.",
+    "heroMessage": "Today the world got a little brighter, because you were born into it. I built this small corner of the internet to hold every reason I am grateful for you, every memory we made, and every dream I hope we chase together.",
+    "birthdayWishes": [
+      "May this year be as gentle and golden as your laugh.",
+      "May every dream you quietly carry find its way to you.",
+      "May you always feel as loved as you make everyone else feel.",
+      "May your chai be warm, your road be kind, and your evenings be full of sunsets."
+    ],
+    "wishPrompt": "Close your eyes, Aanya, and wish for something only you know.",
+    "afterWishMessage": "Whatever you wished for, I am already planning how to help it come true.",
+    "finalQuote": "If I could choose again, in every lifetime, I would still choose you.",
+    "finalMessage": "Happy Birthday, Aanya. I love you.",
+    "reasons": [
+      "The way you laugh with your whole face.",
+      "How you remember the tiny things people tell you.",
+      "Your terrible singing in the car, and how proud you are of it.",
+      "You are kind to waiters, strangers and stray cats alike.",
+      "How calm you stay when I panic.",
+      "Your handwriting on every sticky note you leave me.",
+      "You always read the last page of a book first.",
+      "You believe in me on the days I forget to.",
+      "Chai at midnight, no questions asked.",
+      "Your fearless opinions about movie endings.",
+      "The way you light up when you talk about what you love.",
+      "You never let a good song play without dancing.",
+      "Your hugs fix things.",
+      "You make ordinary Tuesdays feel like festivals.",
+      "How you cheer for everyone's small wins.",
+      "Your stubborn, beautiful honesty.",
+      "The way you hum when you are happy.",
+      "You turned a brand new city into home.",
+      "You still hold my hand in crowded places.",
+      "You are my favourite person to come home to."
+    ],
+    "future": {
+      "places": [
+        "A tiny cottage in the hills, with rain on the roof",
+        "Sunrise at the Taj Mahal, just the two of us",
+        "Lisbon in spring, getting lost on purpose",
+        "The lantern festival in Chiang Mai"
+      ],
+      "dreams": [
+        "A little home with a window seat and far too many plants",
+        "A bookshop cafe with your name on the door",
+        "Learning to dance properly, finally",
+        "A road trip with no map and a very long playlist"
+      ],
+      "promises": [
+        "I will always listen first.",
+        "I will choose patience over pride.",
+        "I will keep making you laugh, even on the bad days.",
+        "I will never stop leaving you little notes."
+      ],
+      "memories": [
+        "Slow Sunday mornings and slightly burnt toast",
+        "Dancing in the kitchen at midnight",
+        "Telling our stories to a very patient dog",
+        "Growing old arguing about whose turn it is to make chai"
+      ]
+    },
+    "musicTitle": "Aanya's Song"
+  },
+  "letters": [
+    {
+      "key": "heart",
+      "title": "A Letter From My Heart",
+      "body": "Dear Aanya,\n\nI have started this letter about twenty times, and every version begins the same way: thank you.\n\nThank you for the evening you stayed on the phone with me until I fell asleep. Thank you for laughing at my worst jokes as if they were the best ones. Thank you for being home in a world that is rarely quiet.\n\nThis year, I wish you mornings that feel unhurried, work that makes you proud, and a heart that never has to carry anything alone. Whatever you chase, I will be right behind you, cheering the loudest.\n\nHappy birthday, my love.\n\nForever yours,\nAarav"
+    },
+    {
+      "key": "open-when-miss",
+      "title": "Open when you miss me",
+      "body": "Hey you.\n\nIf you are reading this, you are missing me, and I am missing you too. Put on our song, make a cup of chai, and look at the last photo we took together.\n\nI am counting down to the next time we meet. Until then, know that I am thinking of you, probably smiling about something silly you said.\n\nSee you soon.\nAarav"
+    },
+    {
+      "key": "open-when-sad",
+      "title": "Open when you feel sad",
+      "body": "If you have opened this, today is heavy.\n\nYou do not have to be okay for me to care about you. You do not have to explain it, fix it, or be strong. You are allowed to just be tired.\n\nThis feeling will pass, and I will be here when it does, and while it is happening too. Call me. Or do not call, and I will just sit quietly with you.\n\nYou are not alone, Aanya. Not today, not ever.\nAarav"
+    },
+    {
+      "key": "open-when-hug",
+      "title": "Open when you need a hug",
+      "body": "Come here.\n\nImagine the long, quiet kind of hug, where nobody is in a rush to let go. Your head on my shoulder, my arms around you, the whole world politely waiting outside.\n\nConsider this a hug on credit. I will pay it back in person, with interest.\n\nAlways,\nAarav"
+    },
+    {
+      "key": "future-wife",
+      "title": "A Letter To Our Future",
+      "body": "I am writing this long before it becomes real, so I only want you to know where my heart is pointed.\n\nIt is pointed at slow mornings, at a kitchen that smells like cardamom, at a version of us who still laugh at the same silly things. It is pointed at you, in every version of the future I can imagine.\n\nWhatever comes, I am in.\n\nAarav"
+    }
+  ],
+  "timeline": [
+    {
+      "date": "2021-08-14",
+      "title": "The day we met",
+      "description": "A crowded rooftop, a friend's birthday, and you laughing louder than the music. I forgot what I was saying mid-sentence, and I have not fully recovered since."
+    },
+    {
+      "date": "2021-09-02",
+      "title": "Our first coffee",
+      "description": "Two hours became five. You told me about your dreams and I quietly decided I wanted to be part of them."
+    },
+    {
+      "date": "2022-02-14",
+      "title": "The first \"I love you\"",
+      "description": "Said badly, over a plate of cold fries, in the least romantic place possible. It was perfect."
+    },
+    {
+      "date": "2023-06-20",
+      "title": "The monsoon trip",
+      "description": "Missed trains, soaked shoes, the best chai of my life and a thousand photos of you pretending not to pose."
+    },
+    {
+      "date": "2025-03-08",
+      "title": "A home of our own",
+      "description": "Too many boxes, one working lamp, and the best night of our lives eating dinner on the floor."
+    }
+  ],
+  "gallery": [
+    {
+      "caption": "Golden hour, our favourite hour",
+      "date": "2025-01-12"
+    },
+    {
+      "caption": "Where the mountains meet the clouds",
+      "date": "2025-02-03"
+    },
+    {
+      "caption": "Monsoon evenings and warm chai",
+      "date": "2025-03-19"
+    },
+    {
+      "caption": "Our little balcony garden",
+      "date": "2025-04-06"
+    },
+    {
+      "caption": "A city that finally felt like home",
+      "date": "2025-05-17"
+    },
+    {
+      "caption": "Lanterns, wishes and your smile",
+      "date": "2025-06-28"
+    },
+    {
+      "caption": "The long way home",
+      "date": "2025-07-21"
+    },
+    {
+      "caption": "Sunday morning flowers",
+      "date": "2025-08-10"
+    },
+    {
+      "caption": "Birthday candles, every year",
+      "date": "2025-12-14"
+    },
+    {
+      "caption": "Us, under a thousand stars",
+      "date": "2026-01-01"
+    }
+  ],
+  "vault": {
+    "secrets": [
+      {
+        "title": "A tiny confession",
+        "body": "I still keep the receipt from our first coffee in my wallet."
+      },
+      {
+        "title": "What I thought that night",
+        "body": "The moment you laughed on the rooftop, I knew my life was about to change."
+      },
+      {
+        "title": "Something I never say out loud",
+        "body": "You make me braver than I ever was."
+      }
+    ],
+    "diary": [
+      {
+        "title": "The day I knew",
+        "body": "It was a regular Thursday. You were arguing with a vending machine and winning. That is when I knew I would love you for a very long time.",
+        "date": "2022-01-20"
+      },
+      {
+        "title": "Rain, again",
+        "body": "We got caught in the rain, shared one umbrella, and neither of us minded getting wet.",
+        "date": "2023-06-21"
+      }
+    ],
+    "letters": [
+      {
+        "title": "To open on your next birthday",
+        "body": "By the time you read this, another year will have passed, and I will love you more than I do today. That is a promise, not a guess.",
+        "date": "2027-12-14"
+      }
+    ]
+  }
+}

@@ -9,8 +9,9 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "seed": "node scripts/seed.js",
-    "smoke": "node scripts/smoke-test.js",
-    "check": "node --check server.js"
+    "check": "node --check server.js && node --check app.js",
+    "migrate": "node scripts/migrate-to-multitenant.js",
+    "test": "node --test --test-concurrency=1 --test-timeout=120000 tests/*.test.js"
   },
   "engines": {
     "node": ">=20"
@@ -24,8 +25,9 @@
     "express-rate-limit": "^7.4.0",
     "helmet": "^7.1.0",
     "mongoose": "^8.5.2",
-    "multer": "^1.4.5-lts.1",
-    "sharp": "^0.33.4",
-    "zod": "^3.23.8"
+    "multer": "^2.5.0",
+    "nodemailer": "^10.6.0",
+    "sharp": "^0.35.5",
+    "zod": "^4.6.7"
   }
 }

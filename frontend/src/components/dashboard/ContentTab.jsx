@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api.js';
-import { useAdminCall, Status } from './useAdminCall.jsx';
+import { useApiCall, Status } from './useApiCall.jsx';
 
 const TEXT_FIELDS = [
   ['siteName', 'Website name (browser tab title + top-left of the menu)', false],
@@ -29,10 +29,10 @@ const fromLines = (s) => s.split('\n').map((l) => l.trim()).filter(Boolean);
 
 export default function ContentTab({ onExpired }) {
   const [form, setForm] = useState(null);
-  const { busy, error, ok, run } = useAdminCall(onExpired);
+  const { busy, error, ok, run } = useApiCall(onExpired);
 
   useEffect(() => {
-    run(() => api.admin.getContent(), '').then((c) => {
+    run(() => api.app.getContent(), '').then((c) => {
       if (!c) return;
       setForm({
         ...Object.fromEntries(TEXT_FIELDS.map(([k]) => [k, k === 'musicTitle' ? c.music.title : c[k]])),
@@ -49,7 +49,7 @@ export default function ContentTab({ onExpired }) {
     e.preventDefault();
     run(
       () =>
-        api.admin.saveContent({
+        api.app.saveContent({
           ...Object.fromEntries(TEXT_FIELDS.map(([k]) => [k, form[k]])),
           birthdayWishes: fromLines(form.birthdayWishes),
           reasons: form.reasons,

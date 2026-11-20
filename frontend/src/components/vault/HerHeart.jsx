@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Pencil, Trash2, X } from 'lucide-react';
-import { api } from '../../services/api.js';
 import { useVault } from '../../hooks/VaultContext.jsx';
 import { formatDateTime } from '../../utils/format.js';
 
@@ -121,7 +120,7 @@ function Editor({ initial, onSave, onCancel, saving, error, autoFocus }) {
 }
 
 export default function HerHeart() {
-  const { role } = useVault();
+  const { role, api: vaultApi } = useVault();
   const isHer = role === 'her';
   const [entries, setEntries] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -135,11 +134,11 @@ export default function HerHeart() {
 
   const load = useCallback(() => {
     setLoadError('');
-    api.vault.journal
+    vaultApi.journal
       .list()
       .then((r) => setEntries(r.entries))
       .catch((err) => err.status !== 401 && setLoadError(err.message));
-  }, []);
+  }, [vaultApi]);
 
   useEffect(() => {
     load();
@@ -157,7 +156,7 @@ export default function HerHeart() {
     setSaving(true);
     setSaveError('');
     try {
-      const { entry } = await api.vault.journal.create(values);
+      const { entry } = await vaultApi.journal.create(values);
       setEntries((list) => [entry, ...(list || [])]);
       reset();
       flash('Saved. Your feelings are safe here ❤️');
@@ -172,7 +171,7 @@ export default function HerHeart() {
     setSaving(true);
     setSaveError('');
     try {
-      const { entry } = await api.vault.journal.update(id, values);
+      const { entry } = await vaultApi.journal.update(id, values);
       setEntries((list) => list.map((e) => (e.id === id ? entry : e)));
       setEditingId(null);
       flash('Changes saved ❤️');
@@ -186,7 +185,7 @@ export default function HerHeart() {
   const confirmDelete = async () => {
     setDeleteBusy(true);
     try {
-      await api.vault.journal.remove(deleting);
+      await vaultApi.journal.remove(deleting);
       setEntries((list) => list.filter((e) => e.id !== deleting));
       setDeleting(null);
       flash('Entry deleted.');

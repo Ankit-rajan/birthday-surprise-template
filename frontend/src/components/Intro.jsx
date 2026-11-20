@@ -3,12 +3,14 @@ import gsap from 'gsap';
 import { useReducedMotion } from 'framer-motion';
 import Petals from './Petals.jsx';
 import { playOpenMoment, startMusic, unlockAudio } from '../utils/sound.js';
+import { useSiteFx } from '../hooks/SiteFx.jsx';
 
 /**
  * Cinematic opening. The envelope is built from layered clip-paths; GSAP drives the open sequence:
  * flap lifts -> letter rises -> letter glows toward the camera -> whole scene dissolves into the site.
  */
 export default function Intro({ site, onOpened }) {
+  const fx = useSiteFx();
   const rootRef = useRef(null);
   const flapRef = useRef(null);
   const letterRef = useRef(null);
@@ -32,7 +34,7 @@ export default function Intro({ site, onOpened }) {
     // First tap on the page: this is the moment browsers allow sound, so the song starts here.
     unlockAudio();
     startMusic(site.music?.url);
-    playOpenMoment();
+    if (fx.sounds) playOpenMoment();
     const k = reduce ? 0.01 : 1;
     const tl = gsap.timeline({ onComplete: onOpened });
     timelineRef.current = tl;

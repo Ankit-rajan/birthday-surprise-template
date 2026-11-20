@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 
-/** Singleton holding the bcrypt hash of the shared vault password. */
+/** One per customer site: the bcrypt hash of that site's private-vault password. */
 const vaultConfigSchema = new mongoose.Schema(
   {
-    key: { type: String, default: 'main', unique: true },
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     passwordHash: { type: String, required: true },
     failedAttempts: { type: Number, default: 0 },
     lockedUntil: { type: Date, default: null },

@@ -1,14 +1,16 @@
 import mongoose from 'mongoose';
 
 /**
- * Metadata for a file stored in GridFS. `visibility` decides which bucket
- * holds the bytes AND which route family may serve them:
- *   public  -> /api/media/:id            (anyone)
- *   private -> /api/vault/media/:id      (unlocked vault session)
- *              /api/admin/private-media/:id/file (admin session)
+ * Metadata for a file stored in GridFS. `owner` is the tenant. `visibility` decides which bucket holds
+ * the bytes AND which route family may serve them:
+ *   public  -> /api/media/:id                       (anyone, but ONLY while the owner's site is published)
+ *              /api/app/media/:id                   (the owner, any time, for dashboard + preview)
+ *   private -> /api/birthday/:slug/vault/media/:id  (an unlocked vault session of that same site)
+ *              /api/app/media/:id                   (the owner)
  */
 const mediaAssetSchema = new mongoose.Schema(
   {
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     visibility: { type: String, enum: ['public', 'private'], required: true, index: true },
     kind: { type: String, enum: ['image', 'video', 'audio'], required: true },
     mime: { type: String, required: true },

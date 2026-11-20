@@ -39,3 +39,29 @@ export function validateAdminPassword(password) {
   }
   return null;
 }
+
+const COMMON = new Set([
+  'password', 'password1', 'password12', 'password123', '1234567890', '12345678910', 'qwertyuiop', 'qwerty12345',
+  'iloveyou123', 'letmein123', 'welcome123', 'admin12345', 'birthday123', 'happybirthday', 'abc1234567', '0123456789',
+  'passw0rd123', 'changeme123', 'iloveyou1234', 'qwerty123456',
+]);
+
+/**
+ * Customer account password policy: 10-72 bytes (bcrypt silently ignores everything past 72 bytes, so we refuse
+ * longer input instead of truncating it), not a well-known password and not built from the email or name.
+ * Returns an error message or null.
+ */
+export function validateUserPassword(password, { email = '', name = '' } = {}) {
+  if (typeof password !== 'string' || password.length < 10) return 'Your password must be at least 10 characters.';
+  if (Buffer.byteLength(password, 'utf8') > 72) return 'Your password is too long (maximum 72 bytes).';
+  const lower = password.toLowerCase();
+  if (COMMON.has(lower) || /^(.)\1+$/.test(lower)) return 'That password is too easy to guess. Try a longer phrase.';
+  const local = String(email).split('@')[0].toLowerCase();
+  if (local.length >= 4 && lower.includes(local)) return 'Your password must not contain your email name.';
+  const compactName = String(name).toLowerCase().replace(/[^a-z]/g, '');
+  if (compactName.length >= 4 && lower.replace(/[^a-z]/g, '') === compactName) return 'Your password must not be just your name.';
+  if (!/[a-z]/i.test(password) || !/[0-9\W_]/.test(password)) {
+    return 'Please mix letters with at least one number or symbol.';
+  }
+  return null;
+}

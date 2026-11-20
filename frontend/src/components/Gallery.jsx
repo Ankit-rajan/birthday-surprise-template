@@ -54,7 +54,7 @@ export default function Gallery({ gallery }) {
 
       {gallery.length === 0 ? (
         <p className="mx-auto max-w-md text-center font-serif text-xl italic text-ivory/60">
-          Edit in Admin Panel &rarr; Gallery. Upload photos here, each with a caption and date. Example: &ldquo;Our first trip, 2024&rdquo;. &#9825;
+          Edit in My Dashboard &rsaquo; My Birthday Website &rsaquo; Gallery. Upload photos here, each with a caption and date. Example: &ldquo;Our first trip, 2024&rdquo;. &#9825;
         </p>
       ) : (
         <div className="mx-auto max-w-6xl columns-2 gap-5 sm:gap-6 md:columns-3 lg:columns-4">

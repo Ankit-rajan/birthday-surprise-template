@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 
-const LINKS = [
+const ALL_LINKS = [
   ['home', 'Home'],
   ['gallery', 'Our world'],
   ['story', 'Our story'],
@@ -13,7 +13,8 @@ const LINKS = [
   ['vault', 'Secret place'],
 ];
 
-export default function NavBar({ siteName }) {
+export default function NavBar({ siteName, showVault = true, topOffset = 0 }) {
+  const LINKS = ALL_LINKS.filter(([id]) => showVault || id !== 'vault');
   const [open, setOpen] = useState(false);
   const [solid, setSolid] = useState(false);
 
@@ -32,7 +33,7 @@ export default function NavBar({ siteName }) {
   }, [open]);
 
   return (
-    <header className={`fixed inset-x-0 top-0 z-50 transition duration-500 ${solid ? 'bg-burgundy-dark/80 shadow-soft backdrop-blur-md' : ''}`}>
+    <header style={{ top: topOffset }} className={`fixed inset-x-0 z-50 transition duration-500 ${solid ? 'bg-burgundy-dark/80 shadow-soft backdrop-blur-md' : ''}`}>
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4" aria-label="Main">
         <a href="#home" className="font-script text-2xl text-gold-light">
           {siteName}

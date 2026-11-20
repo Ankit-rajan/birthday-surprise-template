@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api.js';
-import { useAdminCall, Status } from './useAdminCall.jsx';
+import { useApiCall, Status } from './useApiCall.jsx';
 
 const SLOTS = [
   ['intro', 'Opening screen background (shown blurred behind the envelope)'],
@@ -8,12 +8,12 @@ const SLOTS = [
   ['final', 'Final surprise photo (last section of the page)'],
 ];
 
-export default function SiteMediaTab({ onExpired }) {
+export default function PhotosTab({ onExpired }) {
   const [content, setContent] = useState(null);
-  const { busy, error, ok, run } = useAdminCall(onExpired);
+  const { busy, error, ok, run } = useApiCall(onExpired);
 
   useEffect(() => {
-    run(() => api.admin.getContent(), '').then((c) => c && setContent(c));
+    run(() => api.app.getContent(), '').then((c) => c && setContent(c));
   }, [run]);
 
   if (!content) return <Status error={error} ok="" />;
@@ -36,10 +36,10 @@ export default function SiteMediaTab({ onExpired }) {
             </div>
             <label className="btn-ghost w-full cursor-pointer">
               Choose photo
-              <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={busy} onChange={upload((f) => () => api.admin.setSitePhoto(slot, f), 'Photo updated.')} />
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={busy} onChange={upload((f) => () => api.app.setSitePhoto(slot, f), 'Photo updated.')} />
             </label>
             {content.photos[slot] && (
-              <button className="mt-2 w-full text-xs text-ivory/50 hover:text-blush-deep" disabled={busy} onClick={() => run(() => api.admin.clearSitePhoto(slot), 'Photo removed.').then((c) => c && setContent(c))}>
+              <button className="mt-2 w-full text-xs text-ivory/50 hover:text-blush-deep" disabled={busy} onClick={() => run(() => api.app.clearSitePhoto(slot), 'Photo removed.').then((c) => c && setContent(c))}>
                 Remove
               </button>
             )}
@@ -47,20 +47,41 @@ export default function SiteMediaTab({ onExpired }) {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-gold/25 p-4">
-        <h2 className="mb-1 text-sm text-gold-light">Background music</h2>
+      <Status error={error} ok={ok} />
+    </div>
+  );
+}
+
+/** Background song for the page. Lives on the Customize screen. */
+export function MusicCard({ onExpired }) {
+  const [content, setContent] = useState(null);
+  const { busy, error, ok, run } = useApiCall(onExpired);
+
+  useEffect(() => {
+    run(() => api.app.getContent(), '').then((c) => c && setContent(c));
+  }, [run]);
+
+  if (!content) return <Status error={error} ok="" />;
+  const upload = (fn, msg) => (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) run(fn(file), msg).then((c) => c && setContent(c));
+  };
+
+  return (
+    <div className="space-y-3">
+
         <p className="mb-3 text-xs text-ivory/50">MP3, M4A or OGG, up to 20 MB. Use only music you own or are licensed to use.</p>
         {content.music.url && <audio controls src={content.music.url} className="mb-3 w-full" />}
         <div className="flex flex-wrap gap-3">
           <label className="btn-ghost cursor-pointer">
             {content.music.url ? 'Replace song' : 'Upload song'}
-            <input type="file" accept="audio/mpeg,audio/mp4,audio/ogg,.mp3,.m4a,.ogg" className="sr-only" disabled={busy} onChange={upload((f) => () => api.admin.setMusic(f), 'Song updated.')} />
+            <input type="file" accept="audio/mpeg,audio/mp4,audio/ogg,.mp3,.m4a,.ogg" className="sr-only" disabled={busy} onChange={upload((f) => () => api.app.setMusic(f), 'Song updated.')} />
           </label>
           {content.music.url && (
-            <button className="btn-ghost" disabled={busy} onClick={() => run(() => api.admin.clearMusic(), 'Song removed.').then((c) => c && setContent(c))}>Remove</button>
+            <button className="btn-ghost" disabled={busy} onClick={() => run(() => api.app.clearMusic(), 'Song removed.').then((c) => c && setContent(c))}>Remove</button>
           )}
         </div>
-      </div>
       <Status error={error} ok={ok} />
     </div>
   );

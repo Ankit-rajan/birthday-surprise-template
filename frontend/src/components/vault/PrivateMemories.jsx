@@ -12,7 +12,7 @@ export default function PrivateMemories({ media }) {
   );
 
   if (media.length === 0) {
-    return <p className="text-center font-serif text-xl italic text-ivory/60">Edit in Admin Panel &rarr; Private media. Photos and videos uploaded there appear here, only after the vault is unlocked. &#9825;</p>;
+    return <p className="text-center font-serif text-xl italic text-ivory/60">Edit in My Dashboard &rsaquo; My Birthday Website &rsaquo; Private media. Photos and videos uploaded there appear here, only after the vault is unlocked. &#9825;</p>;
   }
 
   return (

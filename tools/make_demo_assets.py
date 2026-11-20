@@ -1,10 +1,10 @@
 """
-Generates DEMO placeholder media into frontend/public/demo/ so the site looks complete
-before you add your real photos. Nothing here is a real photograph of anyone.
+Generates the demo background SONG (frontend/public/demo/demo-song.mp3): an original synthesised piano-style piece,
+so there is nothing to license. The demo PICTURES, video and social image come from make_sample_art.py.
 
     python3 tools/make_demo_assets.py
 
-Needs: Pillow, numpy, ffmpeg on PATH.
+Needs: numpy and ffmpeg on PATH.
 """
 import math, os, random, subprocess, wave
 import numpy as np
@@ -66,31 +66,6 @@ def make_image(path, w, h, label, seed, sub="DEMO PHOTO  -  replace me"):
     img.convert("RGB").save(path, quality=84, optimize=True)
 
 
-# ---- photos (mixed aspect ratios so the masonry gallery looks natural)
-sizes = [(900, 1200), (1200, 900), (900, 900), (900, 1200), (1200, 800), (900, 1100), (1000, 1000), (900, 1200), (1200, 900), (900, 1200), (1100, 900), (900, 1000)]
-for i, (w, h) in enumerate(sizes, 1):
-    make_image(f"{OUT}/gallery-{i:02d}.jpg", w, h, f"Gallery photo {i}", i, "Admin Panel > Gallery")
-
-make_image(f"{OUT}/intro.jpg", 1200, 1600, "Opening background", 21, "Admin Panel > Photos & music")
-make_image(f"{OUT}/hero.jpg", 900, 1200, "Birthday portrait", 22, "Admin Panel > Photos & music")
-make_image(f"{OUT}/final.jpg", 1000, 1000, "Final surprise photo", 23, "Admin Panel > Photos & music")
-for i in range(1, 7):
-    make_image(f"{OUT}/private-{i:02d}.jpg", 900, 1200 if i % 2 else 900, f"Private photo {i}", 30 + i, "Admin Panel > Private media")
-for i in range(1, 4):
-    make_image(f"{OUT}/timeline-{i}.jpg", 900, 700, f"Timeline photo {i}", 40 + i, "Admin Panel > Timeline")
-
-# ---- social preview (shown when the link is shared): replace with your own 1200x630 image
-make_image(f"{OUT}/../og-image.png", 1200, 630, "A Little World Made For You", 7, "Replace frontend/public/og-image.png")
-
-# ---- demo video (slow zoom over a still, with a soft pulse). 6s, small.
-make_image(f"{OUT}/_video_frame.jpg", 1280, 720, "Private video", 50, "Admin Panel > Private media")
-subprocess.run(
-    ["ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-i", f"{OUT}/_video_frame.jpg", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-     "-t", "6", "-vf", "zoompan=z='min(zoom+0.0015,1.25)':d=150:s=1280x720:fps=25,format=yuv420p",
-     "-c:v", "libx264", "-preset", "veryfast", "-crf", "28", "-c:a", "aac", "-b:a", "64k", "-shortest", "-movflags", "+faststart", f"{OUT}/private-video.mp4"],
-    check=True,
-)
-os.remove(f"{OUT}/_video_frame.jpg")
 
 # ---- demo song: an original gentle piano-style piece (C - G - Am - F), ~64 s, loops cleanly.
 SR = 44100

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../services/api.js';
 import { toDateInput } from '../../utils/format.js';
-import { useAdminCall, Status } from './useAdminCall.jsx';
+import { useApiCall, Status } from './useApiCall.jsx';
 
 /* ------------------------------------------------------------- timeline */
 
@@ -27,16 +27,16 @@ export function TimelineTab({ onExpired }) {
   const [items, setItems] = useState(null);
   const [draft, setDraft] = useState({ title: '', description: '', date: '' });
   const [file, setFile] = useState(null);
-  const { busy, error, ok, run } = useAdminCall(onExpired);
+  const { busy, error, ok, run } = useApiCall(onExpired);
 
   const load = useCallback(() => {
-    run(() => api.admin.list('timeline'), '').then((r) => r && setItems(r.items));
+    run(() => api.app.list('timeline'), '').then((r) => r && setItems(r.items));
   }, [run]);
   useEffect(load, [load]);
 
   const add = async (e) => {
     e.preventDefault();
-    const r = await run(() => api.admin.create('timeline', draft, file), 'Added.');
+    const r = await run(() => api.app.create('timeline', draft, file), 'Added.');
     if (r) {
       setDraft({ title: '', description: '', date: '' });
       setFile(null);
@@ -44,8 +44,8 @@ export function TimelineTab({ onExpired }) {
       load();
     }
   };
-  const save = (item, v) => run(() => api.admin.update('timeline', item.id, v), 'Saved.').then((r) => r && load());
-  const remove = (item) => window.confirm('Delete this timeline entry?') && run(() => api.admin.remove('timeline', item.id), 'Deleted.').then((r) => r && load());
+  const save = (item, v) => run(() => api.app.update('timeline', item.id, v), 'Saved.').then((r) => r && load());
+  const remove = (item) => window.confirm('Delete this timeline entry?') && run(() => api.app.remove('timeline', item.id), 'Deleted.').then((r) => r && load());
 
   return (
     <div className="space-y-8">
@@ -73,16 +73,16 @@ function LetterEditor({ letter, run, busy }) {
     <li className="space-y-2 rounded-2xl border border-gold/20 p-4">
       <input className="field font-serif text-xl" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} aria-label="Letter title" maxLength={200} />
       <textarea rows={12} className="field font-hand text-xl" value={v.body} onChange={(e) => setV({ ...v, body: e.target.value })} aria-label="Letter text" maxLength={20000} />
-      <button className="btn-ghost !px-4 !py-2" disabled={busy} onClick={() => run(() => api.admin.update('letters', letter.id, v), `Saved "${v.title}".`)}>Save letter</button>
+      <button className="btn-ghost !px-4 !py-2" disabled={busy} onClick={() => run(() => api.app.update('letters', letter.id, v), `Saved "${v.title}".`)}>Save letter</button>
     </li>
   );
 }
 
 export function LettersTab({ onExpired }) {
   const [items, setItems] = useState(null);
-  const { busy, error, ok, run } = useAdminCall(onExpired);
+  const { busy, error, ok, run } = useApiCall(onExpired);
   useEffect(() => {
-    run(() => api.admin.list('letters'), '').then((r) => r && setItems(r.items));
+    run(() => api.app.list('letters'), '').then((r) => r && setItems(r.items));
   }, [run]);
   return (
     <div className="space-y-6">
@@ -124,23 +124,23 @@ function MessageRow({ item, onSave, onDelete, busy }) {
 export function MessagesTab({ onExpired }) {
   const [items, setItems] = useState(null);
   const [draft, setDraft] = useState({ kind: 'secret', title: '', body: '', date: '' });
-  const { busy, error, ok, run } = useAdminCall(onExpired);
+  const { busy, error, ok, run } = useApiCall(onExpired);
 
   const load = useCallback(() => {
-    run(() => api.admin.list('private-messages'), '').then((r) => r && setItems(r.items));
+    run(() => api.app.list('private-messages'), '').then((r) => r && setItems(r.items));
   }, [run]);
   useEffect(load, [load]);
 
   const add = async (e) => {
     e.preventDefault();
-    const r = await run(() => api.admin.createJson('private-messages', draft), 'Added.');
+    const r = await run(() => api.app.createJson('private-messages', draft), 'Added.');
     if (r) {
       setDraft({ ...draft, title: '', body: '', date: '' });
       load();
     }
   };
-  const save = (item, v) => run(() => api.admin.update('private-messages', item.id, v), 'Saved.').then((r) => r && load());
-  const remove = (item) => window.confirm('Delete this message?') && run(() => api.admin.remove('private-messages', item.id), 'Deleted.').then((r) => r && load());
+  const save = (item, v) => run(() => api.app.update('private-messages', item.id, v), 'Saved.').then((r) => r && load());
+  const remove = (item) => window.confirm('Delete this message?') && run(() => api.app.remove('private-messages', item.id), 'Deleted.').then((r) => r && load());
 
   return (
     <div className="space-y-8">

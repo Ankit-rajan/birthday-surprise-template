@@ -148,7 +148,8 @@ export default function Hero({ site }) {
         <div className="mt-24 md:mt-32">
           <p className="eyebrow mb-3">Turning {b.age}</p>
           <h2 className="mb-10 font-serif text-3xl italic text-ivory md:text-4xl">Make a wish, my love.</h2>
-<Cake name={site.herName} age={b.age} wishPrompt={site.wishPrompt} afterWishMessage={site.afterWishMessage} />        </div>
+<Cake name={site.herName} age={b.age} wishPrompt={site.wishPrompt} afterWishMessage={site.afterWishMessage} />
+        </div>
       </div>
     </section>
   );

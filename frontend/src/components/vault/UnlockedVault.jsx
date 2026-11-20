@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookHeart, Camera, Lock, Mail, MessageCircleHeart, NotebookPen } from 'lucide-react';
-import { api } from '../../services/api.js';
 import { useVault } from '../../hooks/VaultContext.jsx';
 import PrivateMemories from './PrivateMemories.jsx';
 import { SecretMessages, SecretDiary, LettersForYou } from './MessageTabs.jsx';
@@ -23,13 +22,13 @@ export default function UnlockedVault() {
 
   const load = useCallback(() => {
     setError('');
-    api.vault
+    vault.api
       .overview()
       .then(setData)
       .catch((err) => {
         if (err.status !== 401) setError(err.message); // 401 is handled globally (it re-locks)
       });
-  }, []);
+  }, [vault.api]);
 
   useEffect(() => {
     load();

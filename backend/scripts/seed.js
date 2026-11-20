@@ -1,37 +1,33 @@
 /**
- * One-time (and repeatable) setup:
- *   - creates starter site content, letters and timeline placeholders (never overwrites edits)
- *   - creates the admin account from ADMIN_EMAIL / ADMIN_PASSWORD
- *   - sets the shared vault password from VAULT_PASSWORD
+ * One-time (and repeatable) PLATFORM setup:
+ *   - creates the platform-owner account from ADMIN_EMAIL / ADMIN_PASSWORD
  *
- *   npm run seed                 -> creates anything missing
- *   npm run seed -- --reset-admin   -> also resets the admin password
- *   npm run seed -- --reset-vault   -> also resets the vault password
+ *   npm run seed                    -> creates the platform owner if missing
+ *   npm run seed -- --reset-admin   -> also resets the platform owner's password
  *
- * Passwords are bcrypt-hashed (cost 12) and are never printed or logged.
+ * Customers are NOT seeded: they register themselves. The platform owner is a separate kind of account that
+ * can manage users but is not a customer and has no birthday website. Passwords are bcrypt-hashed (cost 12)
+ * and never printed or logged.
  */
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import { env } from '../config/env.js';
 import { connectDB } from '../config/db.js';
 import { AdminUser } from '../models/AdminUser.js';
-import { VaultConfig } from '../models/VaultConfig.js';
-import { ensureDefaults, getSiteDoc } from '../services/content.js';
-import { validateAdminPassword, validateVaultPassword } from '../utils/passwordPolicy.js';
+import { ensureIndexes } from '../services/indexes.js';
+import { validateAdminPassword } from '../utils/passwordPolicy.js';
 
 const resetAdmin = process.argv.includes('--reset-admin');
-const resetVault = process.argv.includes('--reset-vault');
 
 async function main() {
   await connectDB();
-  await ensureDefaults();
-  console.log('Starter content ready.');
+  await ensureIndexes();
 
   const email = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD || '';
-  const existingAdmin = email ? await AdminUser.findOne({ email }) : null;
+  const existing = email ? await AdminUser.findOne({ email }) : null;
 
-  if (!existingAdmin || resetAdmin) {
+  if (!existing || resetAdmin) {
     if (!email) throw new Error('Set ADMIN_EMAIL in backend/.env first.');
     const problem = validateAdminPassword(adminPassword);
     if (problem) throw new Error(problem);
@@ -41,26 +37,9 @@ async function main() {
       { passwordHash, failedAttempts: 0, lockedUntil: null, role: 'admin' },
       { upsert: true, setDefaultsOnInsert: true },
     );
-    console.log(`Admin account ${existingAdmin ? 'reset' : 'created'}: ${email}`);
+    console.log(`Platform owner account ${existing ? 'reset' : 'created'}: ${email}`);
   } else {
-    console.log(`Admin account already exists: ${email} (use --reset-admin to change its password)`);
-  }
-
-  const vaultExists = await VaultConfig.exists({ key: 'main' });
-  if (!vaultExists || resetVault) {
-    const vaultPassword = process.env.VAULT_PASSWORD || '';
-    const siteDoc = await getSiteDoc();
-    const problem = validateVaultPassword(vaultPassword, { birthDate: siteDoc.birthDate, herName: siteDoc.herName });
-    if (problem) throw new Error(problem);
-    const passwordHash = await bcrypt.hash(vaultPassword, 12);
-    await VaultConfig.findOneAndUpdate(
-      { key: 'main' },
-      { passwordHash, failedAttempts: 0, lockedUntil: null },
-      { upsert: true, setDefaultsOnInsert: true },
-    );
-    console.log(`Vault password ${vaultExists ? 'reset' : 'set'}.`);
-  } else {
-    console.log('Vault password already set (change it from the admin dashboard, or use --reset-vault).');
+    console.log(`Platform owner account already exists: ${email} (use --reset-admin to change its password)`);
   }
 
   console.log(`Done. (${env.isProd ? 'production' : 'development'} database)`);

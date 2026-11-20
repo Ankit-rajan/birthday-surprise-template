@@ -2,29 +2,19 @@ import { SiteContent } from '../models/SiteContent.js';
 import { Letter } from '../models/Letter.js';
 import { TimelineEntry } from '../models/TimelineEntry.js';
 import { GalleryMemory } from '../models/GalleryMemory.js';
-import { MediaAsset } from '../models/MediaAsset.js';
-import { DEFAULT_LETTERS, DEFAULT_TIMELINE } from './defaults.js';
+import { VaultConfig } from '../models/VaultConfig.js';
+import { PLACEHOLDER_PREFIX } from './defaults.js';
 
-export async function getSiteDoc() {
-  return SiteContent.findOneAndUpdate(
-    { key: 'main' },
-    { $setOnInsert: { key: 'main' } },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
-  );
-}
-
-/** Creates starter content on first run. Never overwrites anything already edited. */
-export async function ensureDefaults() {
-  await getSiteDoc();
-  for (const letter of DEFAULT_LETTERS) {
-    await Letter.updateOne({ key: letter.key }, { $setOnInsert: letter }, { upsert: true });
-  }
-  if ((await TimelineEntry.countDocuments()) === 0) {
-    await TimelineEntry.insertMany(DEFAULT_TIMELINE);
-  }
-}
-
-export const publicMediaUrl = (id, thumb = false) => (id ? `/api/media/${id}${thumb ? '?thumb=1' : ''}` : null);
+/**
+ * Media URLs differ by audience:
+ *   public -> /api/media/:id       works for everyone, but only while the owner's site is published
+ *   app    -> /api/app/media/:id   works only for the logged-in owner (dashboard + preview of unpublished sites)
+ */
+export const mediaUrl = (id, { thumb = false, scope = 'public' } = {}) => {
+  if (!id) return null;
+  const base = scope === 'app' ? '/api/app/media' : '/api/media';
+  return `${base}/${id}${thumb ? '?thumb=1' : ''}`;
+};
 
 const byDateThenCreated = (a, b) => {
   const da = a.date ? a.date.getTime() : Infinity;
@@ -32,18 +22,49 @@ const byDateThenCreated = (a, b) => {
   return da - db || a.createdAt - b.createdAt;
 };
 
-/** Everything the public site needs. Contains NO private content. */
-export async function buildPublicContent() {
-  const [site, letters, galleryDocs, timelineDocs] = await Promise.all([
-    getSiteDoc(),
-    Letter.find().lean(),
-    GalleryMemory.find().populate('asset').lean(),
-    TimelineEntry.find().populate('asset').lean(),
+export const SITE_SETTINGS_DEFAULTS = {
+  cake: { theme: 'rose', candles: 5, showAge: true },
+  effects: { petals: true, confetti: true, celebrationSounds: true },
+};
+
+export const serializeSettings = (site) => ({
+  cake: { ...SITE_SETTINGS_DEFAULTS.cake, ...(site.settings?.cake?.toObject?.() ?? site.settings?.cake ?? {}) },
+  effects: { ...SITE_SETTINGS_DEFAULTS.effects, ...(site.settings?.effects?.toObject?.() ?? site.settings?.effects ?? {}) },
+});
+
+/** Text fields that still contain unedited starter hints. */
+export function findPlaceholders(site, letters = [], timeline = []) {
+  const found = [];
+  const check = (label, value) => {
+    if (typeof value === 'string' && value.startsWith(PLACEHOLDER_PREFIX)) found.push(label);
+  };
+  ['introHeading', 'heroMessage', 'wishPrompt', 'afterWishMessage', 'finalQuote', 'finalMessage'].forEach((k) => check(k, site[k]));
+  check('birthdayWishes', site.birthdayWishes?.[0]);
+  check('reasons', site.reasons?.[0]);
+  letters.forEach((l) => check(`letter:${l.key}`, l.body));
+  timeline.forEach((t) => check('timeline', t.title));
+  if (site.herName === 'Their Name') found.push('herName');
+  if (site.partnerName === 'Your Name') found.push('partnerName');
+  return [...new Set(found)];
+}
+
+/**
+ * Everything one birthday page needs, for ONE owner. Contains NO private (vault) content.
+ * `scope` picks the media URL family (see mediaUrl).
+ */
+export async function buildSiteContent(site, scope = 'public') {
+  const owner = site.owner;
+  const [letters, galleryDocs, timelineDocs, vaultConfig] = await Promise.all([
+    Letter.find({ owner }).lean(),
+    GalleryMemory.find({ owner }).populate('asset').lean(),
+    TimelineEntry.find({ owner }).populate('asset').lean(),
+    VaultConfig.exists({ owner }),
   ]);
 
   const reasons = Array.from({ length: 20 }, (_, i) => site.reasons?.[i] || '');
   const letterByKey = Object.fromEntries(letters.map((l) => [l.key, l]));
   const pick = (key) => ({ title: letterByKey[key]?.title || '', body: letterByKey[key]?.body || '' });
+  const url = (id, thumb = false) => mediaUrl(id, { thumb, scope });
 
   return {
     site: {
@@ -67,19 +88,21 @@ export async function buildPublicContent() {
         memories: site.future?.memories || [],
       },
       photos: {
-        intro: publicMediaUrl(site.photos?.intro),
-        hero: publicMediaUrl(site.photos?.hero),
-        final: publicMediaUrl(site.photos?.final),
+        intro: url(site.photos?.intro),
+        hero: url(site.photos?.hero),
+        final: url(site.photos?.final),
       },
-      music: { title: site.music?.title || 'Our Song', url: publicMediaUrl(site.music?.asset) },
+      music: { title: site.music?.title || 'Our Song', url: url(site.music?.asset) },
+      settings: serializeSettings(site),
+      vaultEnabled: Boolean(vaultConfig),
     },
     gallery: galleryDocs
       .filter((g) => g.asset && g.asset.visibility === 'public')
       .sort(byDateThenCreated)
       .map((g) => ({
         id: String(g._id),
-        url: publicMediaUrl(g.asset._id),
-        thumbUrl: publicMediaUrl(g.asset._id, true),
+        url: url(g.asset._id),
+        thumbUrl: url(g.asset._id, true),
         width: g.asset.width,
         height: g.asset.height,
         caption: g.caption,
@@ -90,7 +113,7 @@ export async function buildPublicContent() {
       date: t.date,
       title: t.title,
       description: t.description,
-      photoUrl: t.asset && t.asset.visibility === 'public' ? publicMediaUrl(t.asset._id, true) : null,
+      photoUrl: t.asset && t.asset.visibility === 'public' ? url(t.asset._id, true) : null,
     })),
     letters: {
       heart: pick('heart'),
@@ -100,4 +123,4 @@ export async function buildPublicContent() {
   };
 }
 
-export { MediaAsset };
+export const getOwnSite = (ownerId) => SiteContent.findOne({ owner: ownerId });

@@ -10,7 +10,7 @@ const Empty = ({ children }) => <p className="text-center font-serif text-xl ita
 /** Click-to-reveal cards with a soft unveiling animation. */
 export function SecretMessages({ items }) {
   const [revealed, setRevealed] = useState(() => new Set());
-  if (items.length === 0) return <Empty>Edit in Admin Panel &rarr; Private messages &rarr; type &ldquo;secret&rdquo;. Example: a short note that is revealed on tap. &#9825;</Empty>;
+  if (items.length === 0) return <Empty>Edit in My Dashboard &rsaquo; My Birthday Website &rsaquo; Private messages &rarr; type &ldquo;secret&rdquo;. Example: a short note that is revealed on tap. &#9825;</Empty>;
 
   return (
     <div className="mx-auto grid max-w-4xl gap-5 md:grid-cols-2">
@@ -56,7 +56,7 @@ export function SecretMessages({ items }) {
 
 /** Diary: dated notes in a quiet list. */
 export function SecretDiary({ items }) {
-  if (items.length === 0) return <Empty>Edit in Admin Panel &rarr; Private messages &rarr; type &ldquo;diary&rdquo;. Example: a dated memory you want to keep. &#9825;</Empty>;
+  if (items.length === 0) return <Empty>Edit in My Dashboard &rsaquo; My Birthday Website &rsaquo; Private messages &rarr; type &ldquo;diary&rdquo;. Example: a dated memory you want to keep. &#9825;</Empty>;
   return (
     <ol className="mx-auto max-w-3xl space-y-6">
       {items.map((m, i) => (
@@ -80,7 +80,7 @@ export function SecretDiary({ items }) {
 export function LettersForYou({ items }) {
   const [openId, setOpenId] = useState(null);
   const current = items.find((l) => l.id === openId);
-  if (items.length === 0) return <Empty>Edit in Admin Panel &rarr; Private messages &rarr; type &ldquo;letter&rdquo;. Example: a letter to open on a future date. &#9825;</Empty>;
+  if (items.length === 0) return <Empty>Edit in My Dashboard &rsaquo; My Birthday Website &rsaquo; Private messages &rarr; type &ldquo;letter&rdquo;. Example: a letter to open on a future date. &#9825;</Empty>;
 
   return (
     <>

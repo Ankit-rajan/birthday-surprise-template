@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useReducedMotion } from 'framer-motion';
+import { useSiteFx } from '../hooks/SiteFx.jsx';
 
 const COLORS = ['#ecd9b0', '#d4b483', '#f4cfd3', '#e8a3b0', '#b3294f', '#fff8ec'];
 
 /** Fires a confetti burst from both bottom corners every time `trigger` changes to a truthy number. */
-export default function Confetti({ trigger }) {
+function ConfettiCanvas({ trigger }) {
   const ref = useRef(null);
   const reduce = useReducedMotion();
 
@@ -71,4 +72,9 @@ export default function Confetti({ trigger }) {
   }, [trigger, reduce]);
 
   return <canvas ref={ref} aria-hidden="true" className="pointer-events-none fixed inset-0 z-[70] h-full w-full" />;
+}
+
+export default function Confetti(props) {
+  const { confetti } = useSiteFx();
+  return confetti ? <ConfettiCanvas {...props} /> : null;
 }

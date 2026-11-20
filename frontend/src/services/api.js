@@ -1,25 +1,27 @@
-// All network access lives here. Private data is only ever fetched through these functions,
-// and CSRF tokens are kept in memory only (never localStorage / sessionStorage).
+// All network access lives here. CSRF tokens are kept in memory only (never localStorage / sessionStorage).
+//
+// Three separate API surfaces, three separate sessions:
+//   api.app       customers: auth + their own dashboard             (/api/app/*,   cookie user_sid)
+//   api.platform  the platform owner: user management               (/api/admin/*, cookie admin_sid)
+//   api.birthday  anonymous visitors: a published page + its vault  (/api/birthday/:slug/*)
 
 import { ApiError } from './errors.js';
-import { demoApi } from './mockApi.js';
-import { DEMO_CREDENTIALS } from '../demo/demoData.js';
-
-/** True when started with `npm run demo`: the whole site runs in the browser with sample data, no backend. */
-export const DEMO = import.meta.env.VITE_DEMO === 'true';
-export { DEMO_CREDENTIALS };
 
 const ROOT = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
 export const API_BASE = `${ROOT}/api`;
 
-const csrfTokens = { vault: null, admin: null };
+const csrfTokens = { app: null, admin: null, vault: null };
 let onVaultUnauthorized = null;
+let onAppUnauthorized = null;
 
 export const setCsrf = (scope, token) => {
   csrfTokens[scope] = token;
 };
 export const setVaultUnauthorizedHandler = (fn) => {
   onVaultUnauthorized = fn;
+};
+export const setAppUnauthorizedHandler = (fn) => {
+  onAppUnauthorized = fn;
 };
 
 export { ApiError };
@@ -38,13 +40,7 @@ async function request(scope, method, path, { body, form } = {}) {
 
   let res;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
-      method,
-      headers,
-      body: payload,
-      credentials: 'include',
-      cache: 'no-store',
-    });
+    res = await fetch(`${API_BASE}${path}`, { method, headers, body: payload, credentials: 'include', cache: 'no-store' });
   } catch {
     throw new ApiError(0, 'Could not reach the server. Please check your connection and try again.');
   }
@@ -60,8 +56,9 @@ async function request(scope, method, path, { body, form } = {}) {
   }
 
   if (!res.ok) {
-    if (res.status === 401 && scope === 'vault' && path !== '/vault/unlock') onVaultUnauthorized?.();
-    throw new ApiError(res.status, data?.error || 'Something went wrong. Please try again.', data?.details);
+    if (res.status === 401 && scope === 'vault' && !path.endsWith('/vault/unlock')) onVaultUnauthorized?.();
+    if (res.status === 401 && scope === 'app' && !path.startsWith('/app/auth/')) onAppUnauthorized?.();
+    throw new ApiError(res.status, data?.error || 'Something went wrong. Please try again.', data?.details || data);
   }
   return data;
 }
@@ -74,65 +71,79 @@ const toForm = (fields) => {
   return form;
 };
 
-const vault = (method, path, opts) => request('vault', method, `/vault${path}`, opts);
-const admin = (method, path, opts) => request('admin', method, `/admin${path}`, opts);
+const app = (method, path, opts) => request('app', method, `/app${path}`, opts);
+const platform = (method, path, opts) => request('admin', method, `/admin${path}`, opts);
 
-const realApi = {
-  content: () => request('public', 'GET', '/content'),
-
-  vault: {
-    unlock: (password, role) => vault('POST', '/unlock', { body: { password, role } }),
-    lock: () => vault('POST', '/lock'),
-    heartbeat: () => vault('POST', '/heartbeat'),
-    overview: () => vault('GET', '/overview'),
+/** The private vault API of ONE published page. */
+export const makeVaultApi = (slug) => {
+  const s = encodeURIComponent(slug);
+  const v = (method, path, opts) => request('vault', method, `/birthday/${s}/vault${path}`, opts);
+  return {
+    unlock: (password, role) => v('POST', '/unlock', { body: { password, role } }),
+    lock: () => v('POST', '/lock'),
+    heartbeat: () => v('POST', '/heartbeat'),
+    overview: () => v('GET', '/overview'),
+    lockUrl: `${API_BASE}/birthday/${s}/vault/lock`,
     journal: {
-      list: () => vault('GET', '/journal'),
-      create: (entry) => vault('POST', '/journal', { body: entry }),
-      update: (id, entry) => vault('PUT', `/journal/${id}`, { body: entry }),
-      remove: (id) => vault('DELETE', `/journal/${id}`),
+      list: () => v('GET', '/journal'),
+      create: (entry) => v('POST', '/journal', { body: entry }),
+      update: (id, entry) => v('PUT', `/journal/${id}`, { body: entry }),
+      remove: (id) => v('DELETE', `/journal/${id}`),
     },
-  },
-
-  admin: {
-    me: () => admin('GET', '/auth/me'),
-    login: (email, password) => admin('POST', '/auth/login', { body: { email, password } }),
-    logout: () => admin('POST', '/auth/logout'),
-
-    getContent: () => admin('GET', '/content'),
-    saveContent: (data) => admin('PUT', '/content', { body: data }),
-    setSitePhoto: (slot, file) => admin('POST', `/site-photo/${slot}`, { form: toForm({ file }) }),
-    clearSitePhoto: (slot) => admin('DELETE', `/site-photo/${slot}`),
-    setMusic: (file) => admin('POST', '/music', { form: toForm({ file }) }),
-    clearMusic: () => admin('DELETE', '/music'),
-
-    list: (resource) => admin('GET', `/${resource}`),
-    create: (resource, fields, file) => admin('POST', `/${resource}`, { form: toForm({ ...fields, file }) }),
-    createJson: (resource, body) => admin('POST', `/${resource}`, { body }),
-    update: (resource, id, body) => admin('PUT', `/${resource}/${id}`, { body }),
-    remove: (resource, id) => admin('DELETE', `/${resource}/${id}`),
-
-    changeVaultPassword: (adminPassword, newPassword) =>
-      admin('PUT', '/vault-password', { body: { adminPassword, newPassword } }),
-  },
+  };
 };
 
-// In demo mode, a 401 from the (mock) vault re-locks the page exactly like the real server would.
-function wrapDemoVault(vaultApi) {
-  const wrap = (fn) => async (...args) => {
-    try {
-      return await fn(...args);
-    } catch (err) {
-      if (err.status === 401) onVaultUnauthorized?.();
-      throw err;
-    }
-  };
-  const out = {};
-  for (const [key, value] of Object.entries(vaultApi)) {
-    if (key === 'unlock' || key === 'lock') out[key] = value;
-    else if (typeof value === 'function') out[key] = wrap(value);
-    else out[key] = Object.fromEntries(Object.entries(value).map(([k, f]) => [k, wrap(f)]));
-  }
-  return out;
-}
+export const api = {
+  birthday: (slug) => request('public', 'GET', `/birthday/${encodeURIComponent(slug)}`),
 
-export const api = DEMO ? { ...demoApi, vault: wrapDemoVault(demoApi.vault) } : realApi;
+  auth: {
+    me: () => app('GET', '/auth/me'),
+    register: (body) => app('POST', '/auth/register', { body }),
+    login: (body) => app('POST', '/auth/login', { body }),
+    logout: () => app('POST', '/auth/logout'),
+    forgotPassword: (email) => app('POST', '/auth/forgot-password', { body: { email } }),
+    resetPassword: (token, password) => app('POST', '/auth/reset-password', { body: { token, password } }),
+  },
+
+  app: {
+    // The whole dashboard payload: link name, publish state, storage, and the editable content.
+    site: () => app('GET', '/site'),
+    preview: () => app('GET', '/preview'),
+    publish: (acknowledgePlaceholders = false) => app('POST', '/site/publish', { body: { acknowledgePlaceholders } }),
+    unpublish: () => app('POST', '/site/unpublish'),
+    checkSlug: (slug) => app('GET', `/site/slug-available?slug=${encodeURIComponent(slug)}`),
+    saveSlug: (slug) => app('PUT', '/site/slug', { body: { slug } }),
+    saveSettings: (settings) => app('PUT', '/site/settings', { body: settings }),
+    applyStarter: (template) => app('POST', '/site/starter', { body: { template } }),
+
+    // Content helpers return just the editable content object.
+    getContent: () => app('GET', '/site').then((p) => p.content),
+    saveContent: (data) => app('PUT', '/site', { body: data }).then((p) => p.content),
+    setSitePhoto: (slot, file) => app('POST', `/site-photo/${slot}`, { form: toForm({ file }) }).then((p) => p.content),
+    clearSitePhoto: (slot) => app('DELETE', `/site-photo/${slot}`).then((p) => p.content),
+    setMusic: (file) => app('POST', '/music', { form: toForm({ file }) }).then((p) => p.content),
+    clearMusic: () => app('DELETE', '/music').then((p) => p.content),
+
+    list: (resource) => app('GET', `/${resource}`),
+    create: (resource, fields, file) => app('POST', `/${resource}`, { form: toForm({ ...fields, file }) }),
+    createJson: (resource, body) => app('POST', `/${resource}`, { body }),
+    update: (resource, id, body) => app('PUT', `/${resource}/${id}`, { body }),
+    remove: (resource, id) => app('DELETE', `/${resource}/${id}`),
+
+    saveVaultPassword: (accountPassword, newPassword) => app('PUT', '/vault-password', { body: { accountPassword, newPassword } }),
+    removeVault: (accountPassword) => app('DELETE', '/vault-password', { body: { accountPassword } }),
+
+    updateAccount: (name) => app('PUT', '/account', { body: { name } }),
+    changePassword: (currentPassword, newPassword) => app('PUT', '/account/password', { body: { currentPassword, newPassword } }),
+    deleteAccount: (password) => app('DELETE', '/account', { body: { password } }),
+  },
+
+  platform: {
+    me: () => platform('GET', '/auth/me'),
+    login: (email, password) => platform('POST', '/auth/login', { body: { email, password } }),
+    logout: () => platform('POST', '/auth/logout'),
+    stats: () => platform('GET', '/stats'),
+    users: (params = {}) => platform('GET', `/users?${new URLSearchParams(params)}`),
+    setUserStatus: (id, status) => platform('PATCH', `/users/${id}/status`, { body: { status } }),
+  },
+};

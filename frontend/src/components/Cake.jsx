@@ -2,10 +2,28 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import Confetti from './Confetti.jsx';
 import { playCelebration, playHappyBirthday, playSparkle } from '../utils/sound.js';
+import { useSiteFx } from '../hooks/SiteFx.jsx';
 
-const CANDLES = [112, 136, 160, 184, 208];
+const THEMES = {
+  rose: { bottom: ['#8a1f40', '#4a0c1d'], top: ['#fbe3e6', '#f0b7c0'], icing: '#fbe3e6', icing2: '#fff8ec', dots: '#b3294f' },
+  chocolate: { bottom: ['#6b3f2a', '#3a1d10'], top: ['#a8714f', '#7a4a30'], icing: '#e9d3b8', icing2: '#f6e8d4', dots: '#3a1d10' },
+  vanilla: { bottom: ['#f1dba8', '#d9bd7e'], top: ['#fff3d6', '#f6dfae'], icing: '#fffaf0', icing2: '#ffffff', dots: '#e0a45c' },
+  berry: { bottom: ['#7a2a63', '#44123a'], top: ['#f6c9e8', '#d98ec0'], icing: '#fdeaf6', icing2: '#ffffff', dots: '#7a2a63' },
+  midnight: { bottom: ['#27306b', '#10153a'], top: ['#cfd6ff', '#97a2f0'], icing: '#e8ecff', icing2: '#f6f8ff', dots: '#27306b' },
+};
+
+/** n candle x-positions, centred on the top tier (which spans x 90..230). */
+const candlePositions = (n) => {
+  if (n <= 1) return [160];
+  const step = Math.min(24, 100 / (n - 1));
+  return Array.from({ length: n }, (_, i) => 160 - ((n - 1) * step) / 2 + i * step);
+};
 
 export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWishMessage }) {
+  const fx = useSiteFx();
+  const theme = THEMES[fx.cake.theme] || THEMES.rose;
+  const CANDLES = useMemo(() => candlePositions(fx.cake.candles), [fx.cake.candles]);
+  const firstName = String(name).trim().split(/\s+/)[0] || name;
   const [stage, setStage] = useState('lit'); // lit -> wishing -> blown
   const [burst, setBurst] = useState(0);
   const [lyric, setLyric] = useState(-1);
@@ -14,8 +32,8 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
   const lit = stage !== 'blown';
 
   const lyrics = useMemo(
-    () => ['Happy birthday to you\u2026', 'Happy birthday to you\u2026', `Happy birthday dear ${name}\u2026`, 'Happy birthday to you! \ud83c\udf82'],
-    [name],
+    () => ['Happy birthday to you\u2026', 'Happy birthday to you\u2026', `Happy birthday dear ${firstName}\u2026`, 'Happy birthday to you! \ud83c\udf82'],
+    [firstName],
   );
 
   const stopTune = () => {
@@ -29,8 +47,13 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
     stopTune();
     setStage('wishing');
     setLyric(-1);
-    playSparkle();
-    tuneRef.current = playHappyBirthday({ onLine: setLyric });
+    if (fx.sounds) {
+      playSparkle();
+      tuneRef.current = playHappyBirthday({ onLine: setLyric });
+    } else {
+      // Silent mode: still show the song words, one line at a time.
+      [0, 1, 2, 3].forEach((i) => setTimeout(() => setLyric(i), 900 * (i + 1)));
+    }
   };
 
   // Blow out: whoosh, pop, applause, cheer and "Happy birthday <name>!"
@@ -38,14 +61,14 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
     stopTune();
     setStage('blown');
     setBurst((n) => n + 1);
-    playCelebration(name);
+    if (fx.sounds) playCelebration(firstName);
   };
 
   const relight = () => {
     stopTune();
     setLyric(-1);
     setStage('lit');
-    playSparkle();
+    if (fx.sounds) playSparkle();
   };
 
   return (
@@ -55,12 +78,12 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
       <svg viewBox="0 0 320 300" className="w-full max-w-[360px]" role="img" aria-label={`A birthday cake with ${lit ? 'lit' : 'blown-out'} candles`}>
         <defs>
           <linearGradient id="tierBottom" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#8a1f40" />
-            <stop offset="1" stopColor="#4a0c1d" />
+            <stop offset="0" stopColor={theme.bottom[0]} />
+            <stop offset="1" stopColor={theme.bottom[1]} />
           </linearGradient>
           <linearGradient id="tierTop" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#fbe3e6" />
-            <stop offset="1" stopColor="#f0b7c0" />
+            <stop offset="0" stopColor={theme.top[0]} />
+            <stop offset="1" stopColor={theme.top[1]} />
           </linearGradient>
           <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#ecd9b0" />
@@ -78,20 +101,20 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
         <rect x="55" y="170" width="210" height="88" rx="10" fill="url(#tierBottom)" />
         <path
           d="M55 180 Q70 205 85 180 Q100 210 118 180 Q135 208 152 180 Q170 212 188 180 Q205 206 222 180 Q240 208 265 180 L265 170 L55 170Z"
-          fill="#fbe3e6"
+          fill={theme.icing}
         />
         <text x="160" y="233" textAnchor="middle" fontFamily="'Cormorant Garamond', serif" fontStyle="italic" fontSize="44" fill="#ecd9b0">
-          {age}
+          {fx.cake.showAge ? age : '\u2665'}
         </text>
 
         <rect x="90" y="122" width="140" height="50" rx="9" fill="url(#tierTop)" />
         <path
           d="M90 130 Q103 150 116 130 Q130 154 144 130 Q158 152 172 130 Q186 154 200 130 Q214 150 230 130 L230 122 L90 122Z"
-          fill="#fff8ec"
+          fill={theme.icing2}
         />
-        <circle cx="105" cy="158" r="3" fill="#b3294f" />
-        <circle cx="160" cy="162" r="3" fill="#b3294f" />
-        <circle cx="215" cy="158" r="3" fill="#b3294f" />
+        <circle cx="105" cy="158" r="3" fill={theme.dots} />
+        <circle cx="160" cy="162" r="3" fill={theme.dots} />
+        <circle cx="215" cy="158" r="3" fill={theme.dots} />
 
         {CANDLES.map((x, i) => (
           <g key={x}>

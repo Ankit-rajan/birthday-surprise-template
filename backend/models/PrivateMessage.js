@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
 
-/** Vault-only text: secret messages, diary notes and letters for her. */
+/** Vault-only text: secret messages, diary notes and letters. */
 const privateMessageSchema = new mongoose.Schema(
   {
-    kind: { type: String, enum: ['secret', 'diary', 'letter'], required: true, index: true },
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    kind: { type: String, enum: ['secret', 'diary', 'letter'], required: true },
     title: { type: String, default: '', maxlength: 200 },
     body: { type: String, required: true, maxlength: 20000 },
     date: { type: Date, default: null },

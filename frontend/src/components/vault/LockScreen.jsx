@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { motion, useAnimationControls } from 'framer-motion';
 import { Eye, EyeOff, Lock, Unlock } from 'lucide-react';
 import { useVault } from '../../hooks/VaultContext.jsx';
-import { DEMO, DEMO_CREDENTIALS } from '../../services/api.js';
 import Petals from '../Petals.jsx';
 
 function GoldLock({ opening }) {
@@ -71,9 +70,12 @@ export default function LockScreen({ herName = 'the birthday person' }) {
         <h2 className="font-serif text-4xl text-ivory md:text-5xl">Our Little Secret Place</h2>
         <p className="mt-3 font-serif text-xl italic text-gold-light/90">Some memories are just for us.</p>
 
-        {DEMO && (
+        {vault.hint && (
+          <p className="mx-auto mt-6 rounded-xl border border-dashed border-gold/50 px-4 py-3 text-sm text-gold-light">{vault.hint}</p>
+        )}
+        {!vault.api && (
           <p className="mx-auto mt-6 rounded-xl border border-dashed border-gold/50 px-4 py-3 text-sm text-gold-light">
-            Demo mode &mdash; the password is <code className="rounded bg-white/10 px-1.5 py-0.5">{DEMO_CREDENTIALS.vaultPassword}</code>
+            Preview: the private area opens for visitors once your page is published.
           </p>
         )}
 
@@ -142,7 +144,7 @@ export default function LockScreen({ herName = 'the birthday person' }) {
             )}
           </div>
 
-          <button type="submit" disabled={busy || !password} className="btn-gold w-full">
+          <button type="submit" disabled={busy || !password || !vault.api} className="btn-gold w-full">
             {busy ? 'Unlocking…' : 'Unlock'}
           </button>
         </form>
