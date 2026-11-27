@@ -30,13 +30,14 @@ npm run dev                     # http://localhost:5173
 ## 2. Tests
 
 ```bash
-cd backend && npm test                                # 52 tests; needs mongod (set TEST_MONGODB_URI to use another)
+cd backend && npm test                                # 100 tests (52 original multi-tenant + 42 universal builder + 6 draft preview); needs mongod (set TEST_MONGODB_URI to use another)
 cd frontend && npm run build                          # production build
 
 # Optional browser tests (pip install playwright && playwright install chromium):
 # start the backend + `npm run dev`, seed the platform owner (owner@example.com / owner-passphrase-12345), then
-python3 tools/e2e/browser_e2e.py
-python3 tools/e2e/mobile_audit.py
+python3 tools/e2e/browser_e2e.py                      # 60 checks: whole customer journey, desktop sidebar
+python3 tools/e2e/mobile_audit.py                     # 390px: overflow, clipping, bottom nav, 44px touch targets, public page
+python3 tools/e2e/dashboard_ui.py                     # 48 checks: Features, Relationship, Appearance, Wording, Copy/Share, all themes
 ```
 
 ## 3. Environment variables

@@ -42,7 +42,7 @@ The platform area is not linked from any customer or public page (`/platform`, `
 
 **Public** (no login)
 `GET /api/birthday/:slug` · `GET /api/media/:id` (only while the owner's page is published) ·
-`POST /api/birthday/:slug/vault/unlock|lock` · `GET …/vault/session` · after unlock: `POST …/vault/heartbeat`, `GET …/vault/overview`,
+`POST /api/birthday/:slug/unlock-site` (page lock) · `POST /api/birthday/:slug/vault/unlock|lock` · `GET …/vault/session` · after unlock: `POST …/vault/heartbeat`, `GET …/vault/overview`,
 `GET …/vault/media/:id`, `GET|POST …/vault/journal`, `PUT|DELETE …/vault/journal/:id` (`her` role writes)
 
 **Customer** (`/api/app`; session + CSRF token + Origin check on every write)
@@ -52,10 +52,25 @@ The platform area is not linked from any customer or public page (`/platform`, `
 `GET preview` · `GET media/:id` (owner's own files, any state) ·
 `POST|DELETE site-photo/:slot` · `POST|DELETE music` ·
 `gallery`, `timeline`, `private-media`, `private-messages` (list/create/update/delete) · `letters` (list/update) ·
-`PUT|DELETE vault-password`
+`PUT|DELETE vault-password` ·
+`PUT site/features` (`{features:{key:bool}}` or `{preset:'all'|'none'|'defaults'}`) ·
+`PUT site/relationship` (`{mode,type?,dryRun?,overwriteCustom?}`; a dry run lists what would be replaced and kept) ·
+`PUT site/appearance` (theme, five `#rrggbb` colours, font; `null` clears) · `PUT site/copy` (`{copy:{key:string|null}}`) ·
+`PUT|DELETE site/password` (page lock; needs the account password) ·
+`POST preview` (`{features?, relationship?}`: renders the owner's page with UNSAVED choices; changes the document in memory only, never saves, same session/CSRF/Origin rules; a relationship draft changes labels and wording, stored starter text is replaced only on save)
 
 **Platform owner** (`/api/admin`)
 `POST auth/login|logout` · `GET auth/me` · `GET stats` · `GET users?search&status&page&limit` · `PATCH users/:id/status`
+
+## Universal builder: configuration model
+
+* The registry `siteConfig.json` (modes, 49 features, themes, fonts, wording per mode) is mirrored in `backend/services/siteConfig/` and
+  `frontend/src/config/siteConfig/`. **The two copies must stay identical.**
+* Only switches a customer touched are stored (`SiteContent.features`); defaults come from the registry. Old pages fall back to `settings.effects.*` / `settings.cake.showAge`.
+* `buildSiteContent` removes every field and section whose feature is off before the response is built. `requireFeature` and `requireSiteAccess` guard the vault, journal, media and
+  page-lock routes. The page password uses a separate `site_sid` cookie (path `/api`), a hashed password (`select:false`), and a 15-minute lock-out after 20 failures.
+* `copyOverrides` stores only labels the customer edited; the rest is resolved from the mode's wording, so changing mode never overwrites user text.
+* Theme colours and fonts are CSS variables set while a birthday page is mounted; Tailwind colours read them.
 
 ## Security controls
 
@@ -72,19 +87,41 @@ The platform area is not linked from any customer or public page (`/platform`, `
 
 | Suite | Result |
 |---|---|
-| `cd backend && npm test`: 52 integration tests against a real MongoDB 8.3 | **52 / 52 pass** |
-| `python3 tools/e2e/browser_e2e.py`: headless Chromium through the real UI (landing, CTAs, demo, vault, register, dashboard, customize, publish, preview, public page, logout, platform) | **59 / 59 pass** |
-| `python3 tools/e2e/mobile_audit.py`: 390 px phone width, 15 screens | no horizontal overflow, no broken images |
+| `cd backend && npm test`: 52 original integration tests against a real MongoDB 8.3 (see the universal-builder table below for the current total) | 52 / 52 (unchanged, unmodified) |
+| `python3 tools/e2e/browser_e2e.py`: headless Chromium through the real UI (landing, CTAs, demo, vault, register, dashboard, customize, publish, preview, public page, logout, platform) | 59 / 59 on the original layout; updated for the new dashboard navigation, now **60 / 60** |
+| `python3 tools/e2e/mobile_audit.py`: 390 px phone width, 27 screens (dashboard, Features, Customize tabs, preview, public page), bottom nav and touch targets | no horizontal overflow or clipping, no broken images |
 | `npm audit --omit=dev` (backend and frontend) | **0 vulnerabilities** (after upgrading multer 2, sharp 0.35, nodemailer 10, zod 4, react-router 7) |
 | `npm run build` (frontend) | succeeds |
 | Production-mode smoke (`NODE_ENV=production`) | cookie is `HttpOnly; Secure; SameSite=Strict`, HSTS on, foreign Origin refused (403), refuses to start without secrets |
 | Legacy migration on a simulated old single-site database | dry-run, real run, re-run (idempotent), page then served at `/birthday/<slug>`, owner can log in |
 
-Security scenarios covered by the 52 tests: duplicate/weak passwords; CSRF token + Origin; NoSQL injection; login/registration rate limits;
+Security scenarios covered by the original 52 tests: duplicate/weak passwords; CSRF token + Origin; NoSQL injection; login/registration rate limits;
 single-use and expiring reset tokens; User B reading, editing, deleting User A's gallery/timeline/letters/messages/media by ID (404 + data intact);
 attacker-supplied `owner` (rejected/ignored); slug hijack; unpublished pages and their media hidden; vault cookie from site A useless on site B;
 journal private per site and encrypted at rest; platform endpoints unreachable for customers and vice versa; platform user list contains no content;
 deactivation signs out, hides the page and blocks login; disguised uploads (HTML/SVG/script/text as `.jpg`); storage quota; account deletion removes every document and file of that user and none of anyone else's.
+
+## Universal builder: verification (this change)
+
+| Check | Result |
+|---|---|
+| `cd backend && npm test`: 100 integration tests (original 52 untouched + 42 for features, relationship, appearance, copy, page lock + 6 for draft preview) on real MongoDB 8.3 | **100 / 100 pass** |
+| `python3 tools/e2e/dashboard_ui.py`: 48 real-browser checks (Features page, toggles, save + error states, Enable/Disable all, Defaults, draft preview, relationship switch + kept wording, appearance + custom colours + contrast warning, wording, Copy link, Share handler, all 10 themes at 390 and 1440 px, font fallbacks) | **48 / 48 pass** |
+| `python3 tools/e2e/mobile_audit.py`: dashboard, Features, Customize tabs, preview, More sheet, public page at 390 px (overflow, clipping, bottom-nav coverage, 44 px nav and Save buttons) | pass |
+| `cd frontend && npx vite build` | succeeds |
+| Headless Chromium at 360, 375, 390, 430, 820 and 1440 px: all dashboard pages and the published page | no horizontal overflow |
+| Browser flows: register in Friendship mode, switch persists after reload, Enable all / Disable all / Defaults, theme persists, copy link puts the full URL on the clipboard, publish, page lock (content hidden, wrong password rejected, correct password unlocks) | pass |
+
+## Theme, font and contrast notes
+
+* Colours and fonts are CSS variables with built-in defaults; every font stack ends in `Georgia, serif` / `cursive` / `system-ui`, so the page is readable and
+  laid out the same way if Google Fonts cannot load. Fonts are a `<link>` with `display=swap`; nothing waits for them.
+* WCAG contrast (text on background, text on section, accent on background, button text on button) was computed for all 11 presets: lowest is 11.8:1, all above 4.5:1.
+  Custom colours are the owner's choice: the Appearance tab warns when text/background fall below 4.5:1.
+* In the sandbox used for testing, Google Fonts is blocked, so the named web fonts (Playfair, Fredoka, DM Serif, ...) were **never seen rendered**; only the fallback fonts
+  were verified. Colours, layout and overflow of all 10 non-classic themes were verified at 390 and 1440 px.
+* `navigator.share` is not native in headless Chromium here. Share was tested (a) as the WhatsApp-link fallback and (b) with a stubbed `navigator.share` for the
+  accept / cancel / failure paths. The operating system's real share sheet was not exercised.
 
 ## Known limitations (please read)
 
@@ -96,6 +133,10 @@ deactivation signs out, hides the page and blocks login; disguised uploads (HTML
 6. **No 2FA** for the platform owner; the platform owner can deactivate users but not delete them or read their content (by design).
 7. Demo pictures are **generated illustrations** (original artwork, no people), not photographs. The demo song is original synthesised audio. Customers must only upload music they have the right to use.
 8. The journal key (`JOURNAL_ENCRYPTION_KEY`) is one key for the whole platform.
-9. Tested in headless Chromium only (not Safari/Firefox); the sandbox had no internet, so the Google Fonts typography was not verified visually.
+9. Tested in headless Chromium only (not Safari/Firefox); the sandbox blocks Google Fonts, so web-font typography was not verified visually (fallback fonts were).
 10. The old public URL `/` used to be the birthday page. It is now the marketing page; the migrated page lives at `/birthday/<slug>`. Links already shared must be re-sent.
 11. "Surprise Studio" is a working brand name; change it in `frontend/src/brand.js`.
+12. Universal builder: the dashboard tests are real-browser scripts (Playwright, Python) against the running stack, not component-level unit tests; there is no jest/vitest layer.
+13. Universal builder: the two copies of the shared config (`backend/services/siteConfig`, `frontend/src/config/siteConfig`) must stay identical; a backend test fails if they differ.
+14. Draft preview of a relationship change shows the new labels and wording but not the new starter text, which is stored in the database and is replaced only when you save (and never over text you wrote).
+15. Decorative falling petals keep their original pink/crimson colours in every theme.
