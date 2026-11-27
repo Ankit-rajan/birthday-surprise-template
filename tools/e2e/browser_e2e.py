@@ -14,7 +14,7 @@ with sync_playwright() as p:
         ctx = b.new_context(viewport={"width": w, "height": h}, is_mobile=mobile, has_touch=mobile, device_scale_factor=1)
         errs = []
         page = ctx.new_page()
-        page.on("console", lambda m: errs.append(m.text) if m.type == "error" and "ERR_NAME_NOT_RESOLVED" not in m.text else None)
+        page.on("console", lambda m: errs.append(m.text) if m.type == "error" and "ERR_NAME_NOT_RESOLVED" not in m.text and "ERR_TUNNEL_CONNECTION_FAILED" not in m.text else None)
         page.on("pageerror", lambda e: errs.append(str(e)))
         page.on("response", lambda r: errs.append(f"HTTP {r.status} {r.url}") if r.status >= 400 and "/api/app/auth/me" not in r.url and "/api/admin/auth/me" not in r.url and r.status != 401 else None)
         return ctx, page, errs
@@ -94,17 +94,18 @@ with sync_playwright() as p:
     page.wait_for_url("**/dashboard", timeout=15000)
     page.wait_for_selector("text=Hello, Meera"); page.wait_for_timeout(500)
     page.screenshot(path="/tmp/e2e/shots/dashboard.png", full_page=True)
-    nav = page.locator("header nav").inner_text()
-    for label in ["My Dashboard", "My Birthday Website", "Customize", "Preview", "Account Settings", "Logout"]:
+    # Desktop: sidebar. (Phone bottom bar is covered by mobile_audit.py and dashboard_ui.py.)
+    nav = page.locator("aside").inner_text()
+    for label in ["Dashboard", "My Website", "Customize", "Features", "Preview", "Account Settings", "Logout"]:
         check(f"customer nav has '{label}'", label.lower() in nav.lower(), nav)
     check("customer sees no 'admin' anywhere", "admin" not in page.inner_text("body").lower())
     check("customer nav has no platform link", page.locator("a[href*='platform'], a[href*='admin']").count() == 0)
     check("new account starts as draft", page.get_by_text("Draft (private)").is_visible())
     check("new workspace has NO demo data", "Aanya" not in page.inner_text("body"))
-    slug = page.locator("code").first.inner_text().split("/birthday/")[1].strip()
+    slug = page.locator("#public-link-text").input_value().split("/birthday/")[1].strip()
 
     # customize
-    page.goto(BASE + "/dashboard/customize"); page.wait_for_selector("text=Birthday cake")
+    page.goto(BASE + "/dashboard/customize?tab=cake"); page.wait_for_selector("text=Birthday cake")
     page.get_by_role("radio", name="Chocolate").click(); page.wait_for_timeout(600)
     page.screenshot(path="/tmp/e2e/shots/customize.png", full_page=True)
     check("customize saves cake theme", page.get_by_text("Saved.").count() >= 1)
@@ -120,7 +121,7 @@ with sync_playwright() as p:
     # website tabs
     page.goto(BASE + "/dashboard/website"); page.wait_for_selector("[role=tablist]")
     page.screenshot(path="/tmp/e2e/shots/website-tab.png", full_page=True)
-    for tab in ["Cover photos", "Gallery", "Timeline", "Letters", "Private photos & videos", "Private messages", "Private area password"]:
+    for tab in ["Cover photos", "Gallery", "Timeline", "Letters", "Private photos & videos", "Private messages", "Passwords & privacy"]:
         page.get_by_role("tab", name=tab).click(); page.wait_for_timeout(300)
         check(f"tab '{tab}' renders without error", page.locator("[role=alert]").count() == 0)
 
