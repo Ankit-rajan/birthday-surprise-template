@@ -4,6 +4,7 @@ import { TimelineEntry } from '../models/TimelineEntry.js';
 import { GalleryMemory } from '../models/GalleryMemory.js';
 import { VaultConfig } from '../models/VaultConfig.js';
 import { PLACEHOLDER_PREFIX } from './defaults.js';
+import { siteFeatures, siteRelationship, siteAppearance, siteCopyOverrides } from './siteState.js';
 
 /**
  * Media URLs differ by audience:
@@ -27,9 +28,10 @@ export const SITE_SETTINGS_DEFAULTS = {
   effects: { petals: true, confetti: true, celebrationSounds: true },
 };
 
-export const serializeSettings = (site) => ({
-  cake: { ...SITE_SETTINGS_DEFAULTS.cake, ...(site.settings?.cake?.toObject?.() ?? site.settings?.cake ?? {}) },
-  effects: { ...SITE_SETTINGS_DEFAULTS.effects, ...(site.settings?.effects?.toObject?.() ?? site.settings?.effects ?? {}) },
+/** The old settings shape, kept for the existing Customize page. The switches are the source of truth, so both always agree. */
+export const serializeSettings = (site, features = siteFeatures(site)) => ({
+  cake: { ...SITE_SETTINGS_DEFAULTS.cake, ...(site.settings?.cake?.toObject?.() ?? site.settings?.cake ?? {}), showAge: features.showAge },
+  effects: { petals: features.petals, confetti: features.confetti, celebrationSounds: features.celebrationSounds },
 });
 
 /** Text fields that still contain unedited starter hints. */
@@ -54,17 +56,22 @@ export function findPlaceholders(site, letters = [], timeline = []) {
  */
 export async function buildSiteContent(site, scope = 'public') {
   const owner = site.owner;
+  const f = siteFeatures(site);
   const [letters, galleryDocs, timelineDocs, vaultConfig] = await Promise.all([
     Letter.find({ owner }).lean(),
-    GalleryMemory.find({ owner }).populate('asset').lean(),
-    TimelineEntry.find({ owner }).populate('asset').lean(),
-    VaultConfig.exists({ owner }),
+    f.gallery || f.videoGallery ? GalleryMemory.find({ owner }).populate('asset').lean() : [],
+    f.timeline ? TimelineEntry.find({ owner }).populate('asset').lean() : [],
+    f.vault ? VaultConfig.exists({ owner }) : null,
   ]);
 
-  const reasons = Array.from({ length: 20 }, (_, i) => site.reasons?.[i] || '');
+  const reasons = f.flipCards ? Array.from({ length: 20 }, (_, i) => site.reasons?.[i] || '') : [];
   const letterByKey = Object.fromEntries(letters.map((l) => [l.key, l]));
-  const pick = (key) => ({ title: letterByKey[key]?.title || '', body: letterByKey[key]?.body || '' });
+  const pick = (key, on) => ({ title: on ? letterByKey[key]?.title || '' : '', body: on ? letterByKey[key]?.body || '' : '' });
   const url = (id, thumb = false) => mediaUrl(id, { thumb, scope });
+  const gate = (on, value, empty = '') => (on ? value : empty);
+  const list = (on, arr) => (on ? arr || [] : []);
+  const kindOf = (g) => g.asset?.kind;
+  const publicGallery = galleryDocs.filter((g) => g.asset && g.asset.visibility === 'public').sort(byDateThenCreated);
 
   return {
     site: {
@@ -72,53 +79,65 @@ export async function buildSiteContent(site, scope = 'public') {
       herName: site.herName,
       birthDate: site.birthDate,
       partnerName: site.partnerName,
-      introHeading: site.introHeading,
-      introSubtitle: site.introSubtitle,
-      heroMessage: site.heroMessage,
-      birthdayWishes: site.birthdayWishes,
-      wishPrompt: site.wishPrompt,
-      afterWishMessage: site.afterWishMessage,
-      finalQuote: site.finalQuote,
-      finalMessage: site.finalMessage,
+      introHeading: gate(f.envelope, site.introHeading),
+      introSubtitle: gate(f.envelope, site.introSubtitle),
+      heroMessage: gate(f.introMessage, site.heroMessage),
+      birthdayWishes: list(f.birthdayWishes, site.birthdayWishes),
+      wishPrompt: gate(f.celebrationMessages, site.wishPrompt),
+      afterWishMessage: gate(f.celebrationMessages, site.afterWishMessage),
+      finalQuote: gate(f.closing, site.finalQuote),
+      finalMessage: gate(f.closing, site.finalMessage),
       reasons,
       future: {
-        places: site.future?.places || [],
-        dreams: site.future?.dreams || [],
-        promises: site.future?.promises || [],
-        memories: site.future?.memories || [],
+        places: list(f.future, site.future?.places),
+        dreams: list(f.future, site.future?.dreams),
+        promises: list(f.future, site.future?.promises),
+        memories: list(f.future && f.sharedMemories, site.future?.memories),
       },
       photos: {
-        intro: url(site.photos?.intro),
-        hero: url(site.photos?.hero),
-        final: url(site.photos?.final),
+        intro: f.envelope ? url(site.photos?.intro) : null,
+        hero: f.hero ? url(site.photos?.hero) : null,
+        final: f.closing ? url(site.photos?.final) : null,
       },
-      music: { title: site.music?.title || 'Our Song', url: url(site.music?.asset) },
-      settings: serializeSettings(site),
-      vaultEnabled: Boolean(vaultConfig),
+      music: { title: site.music?.title || 'Our Song', url: f.music ? url(site.music?.asset) : null },
+      settings: serializeSettings(site, f),
+      vaultEnabled: Boolean(vaultConfig) && f.vault,
+      relationship: siteRelationship(site),
+      features: f,
+      appearance: siteAppearance(site),
+      copy: siteCopyOverrides(site),
     },
-    gallery: galleryDocs
-      .filter((g) => g.asset && g.asset.visibility === 'public')
-      .sort(byDateThenCreated)
-      .map((g) => ({
-        id: String(g._id),
-        url: url(g.asset._id),
-        thumbUrl: url(g.asset._id, true),
-        width: g.asset.width,
-        height: g.asset.height,
-        caption: g.caption,
-        date: g.date,
-      })),
-    timeline: timelineDocs.sort(byDateThenCreated).map((t) => ({
-      id: String(t._id),
-      date: t.date,
-      title: t.title,
-      description: t.description,
-      photoUrl: t.asset && t.asset.visibility === 'public' ? url(t.asset._id, true) : null,
-    })),
+    gallery: f.gallery
+      ? publicGallery
+          .filter((g) => kindOf(g) === 'image')
+          .map((g) => ({
+            id: String(g._id),
+            url: url(g.asset._id),
+            thumbUrl: url(g.asset._id, true),
+            width: g.asset.width,
+            height: g.asset.height,
+            caption: g.caption,
+            date: g.date,
+          }))
+      : [],
+    videos: f.videoGallery
+      ? publicGallery
+          .filter((g) => kindOf(g) === 'video')
+          .map((g) => ({ id: String(g._id), url: url(g.asset._id), mime: g.asset.mime, caption: g.caption, date: g.date }))
+      : [],
+    timeline: f.timeline
+      ? timelineDocs.sort(byDateThenCreated).map((t) => ({
+          id: String(t._id),
+          date: t.date,
+          title: t.title,
+          description: t.description,
+          photoUrl: t.asset && t.asset.visibility === 'public' ? url(t.asset._id, true) : null,
+        }))
+      : [],
     letters: {
-      heart: pick('heart'),
-      openWhen: ['open-when-miss', 'open-when-sad', 'open-when-hug'].map((key) => ({ key, ...pick(key) })),
-      futureWife: pick('future-wife'),
+      heart: pick('heart', f.mainLetter),
+      openWhen: f.openWhenLetters ? ['open-when-miss', 'open-when-sad', 'open-when-hug'].map((key) => ({ key, ...pick(key, true) })) : [],
+      futureWife: pick('future-wife', f.futureLetter),
     },
   };
 }

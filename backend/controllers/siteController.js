@@ -19,7 +19,26 @@ import { PrivateMedia } from '../models/PrivateMedia.js';
 import { PrivateMessage } from '../models/PrivateMessage.js';
 import { MediaAsset } from '../models/MediaAsset.js';
 import { env } from '../config/env.js';
-import { destroyVaultSessionsForOwner } from '../services/sessions.js';
+import { destroyVaultSessionsForOwner, destroySiteSessionsForOwner } from '../services/sessions.js';
+import {
+  siteFeatures,
+  siteRawFeatures,
+  siteRelationship,
+  siteAppearance,
+  siteCopyOverrides,
+} from '../services/siteState.js';
+import {
+  FEATURE_KEYS,
+  FEATURE_DEFAULTS,
+  COPY_KEYS,
+  FONT_BY_ID,
+  THEME_BY_ID,
+  MODES,
+  isValidType,
+  defaultTypeFor,
+  themesFor,
+} from '../services/siteConfig/siteConfig.js';
+import { starterFor, STARTER_SITE_FIELDS } from '../services/starters.js';
 import {
   buildSiteContent,
   findPlaceholders,
@@ -75,6 +94,11 @@ const editableContent = (site) => ({
   photos: { intro: app(site.photos?.intro, true), hero: app(site.photos?.hero, true), final: app(site.photos?.final, true) },
   music: { title: site.music?.title || '', url: app(site.music?.asset) },
   settings: serializeSettings(site),
+  relationship: siteRelationship(site),
+  features: siteFeatures(site),
+  featuresRaw: siteRawFeatures(site),
+  appearance: siteAppearance(site),
+  copy: siteCopyOverrides(site),
 });
 
 async function dashboardPayload(site) {
@@ -90,6 +114,7 @@ async function dashboardPayload(site) {
     publishedAt: site.publishedAt,
     publicPath: `/birthday/${site.slug}`,
     vaultEnabled: Boolean(vault),
+    passwordSet: Boolean(site.sitePasswordSet),
     placeholders: findPlaceholders(site, letters, timeline),
     storage: { usedBytes: used, quotaBytes: env.maxUserStorageMb * 1024 * 1024 },
     content: editableContent(site),
@@ -176,7 +201,11 @@ export const updateSettings = asyncHandler(async (req, res) => {
   const data = settingsSchema.parse(req.body);
   const $set = {};
   for (const [group, values] of Object.entries(data)) {
-    for (const [k, v] of Object.entries(values)) $set[`settings.${group}.${k}`] = v;
+    for (const [k, v] of Object.entries(values)) {
+      $set[`settings.${group}.${k}`] = v;
+      // The same choices are feature switches now; the switch wins, so keep it in step.
+      if (typeof v === 'boolean') $set[`features.${k}`] = v;
+    }
   }
   const site = await SiteContent.findOneAndUpdate({ owner: req.user._id }, { $set }, { new: true });
   if (!site) throw new HttpError(404, 'Website not found');
@@ -187,6 +216,31 @@ export const updateSettings = asyncHandler(async (req, res) => {
 export const preview = asyncHandler(async (req, res) => {
   const site = await mySite(req);
   res.json({ ...(await buildSiteContent(site, 'app')), published: site.published, slug: site.slug });
+});
+
+const previewDraftSchema = z
+  .object({
+    features: z.partialRecord(z.enum(FEATURE_KEYS), z.boolean()).optional(),
+    relationship: z.object({ mode: z.enum(MODES), type: z.string().trim().max(40).optional() }).strict().optional(),
+  })
+  .strict();
+
+/**
+ * Preview with UNSAVED feature / relationship choices. The owner's document is changed in memory only and is never saved, so nothing is
+ * persisted; the result is exactly what the owner could already see through GET /preview once saved, so no new content is exposed. Same
+ * session + CSRF + origin protection as every other write. A relationship draft changes wording/labels only: starter text stored in the
+ * database is replaced on save, never in a preview.
+ */
+export const previewDraft = asyncHandler(async (req, res) => {
+  const draft = previewDraftSchema.parse(req.body ?? {});
+  const site = await mySite(req);
+  if (draft.features) site.set('features', { ...siteRawFeatures(site), ...draft.features });
+  if (draft.relationship) {
+    const { mode } = draft.relationship;
+    const type = isValidType(mode, draft.relationship.type) ? draft.relationship.type : defaultTypeFor(mode);
+    site.set('relationship', { mode, type });
+  }
+  res.json({ ...(await buildSiteContent(site, 'app')), published: site.published, slug: site.slug, draft: true });
 });
 
 /* ----------------------------------------------- link name and publishing */
@@ -303,9 +357,10 @@ const itemPatchSchema = z.object({ caption: str(400).optional(), date: dateField
 
 const galleryJson = (g) => ({
   id: String(g._id),
+  kind: g.asset?.kind || 'image',
   caption: g.caption,
   date: g.date,
-  thumbUrl: g.asset ? app(g.asset._id, true) : null,
+  thumbUrl: g.asset ? app(g.asset._id, g.asset.kind === 'image') : null,
 });
 
 export const listGallery = asyncHandler(async (req, res) => {
@@ -315,8 +370,8 @@ export const listGallery = asyncHandler(async (req, res) => {
 
 export const createGallery = asyncHandler(async (req, res) => {
   const body = itemSchema.parse(req.body);
-  await assertRoom(GalleryMemory, req.user._id, MAX.gallery, 'gallery photos');
-  const asset = await ingestUpload(req.user._id, req.file, 'public', ['image']);
+  await assertRoom(GalleryMemory, req.user._id, MAX.gallery, 'gallery photos and videos');
+  const asset = await ingestUpload(req.user._id, req.file, 'public', ['image', 'video']);
   const doc = await GalleryMemory.create({ owner: req.user._id, asset: asset._id, caption: body.caption, date: toDate(body.date) });
   await doc.populate('asset');
   res.status(201).json({ item: galleryJson(doc) });
@@ -543,4 +598,203 @@ export const removeVault = asyncHandler(async (req, res) => {
   await VaultConfig.deleteOne({ owner: req.user._id });
   await destroyVaultSessionsForOwner(req.user._id);
   res.json({ ok: true, message: 'The private vault is switched off. Your private photos and messages are kept.' });
+});
+
+/* ====================================================== universal builder */
+
+const ok = async (req, res, extra = {}) => res.json({ ...(await dashboardPayload(await mySite(req))), ...extra });
+
+/* ------------------------------------------------------- feature switches */
+
+const featuresSchema = z
+  .object({
+    features: z.partialRecord(z.enum(FEATURE_KEYS), z.boolean()).optional(),
+    preset: z.enum(['all', 'none', 'defaults']).optional(),
+  })
+  .strict()
+  .refine((v) => v.features !== undefined || v.preset !== undefined, 'Send "features" or "preset".')
+  .refine((v) => !(v.features && v.preset), 'Send either "features" or "preset", not both.');
+
+export const updateFeatures = asyncHandler(async (req, res) => {
+  const { features, preset } = featuresSchema.parse(req.body);
+  const before = await mySite(req);
+  const wasVault = siteFeatures(before).vault;
+  const update = {};
+  if (preset === 'defaults') {
+    // Back to the registry defaults, including the old Customize values the switches used to fall back on.
+    update.$unset = { features: '' };
+    update.$set = {
+      'settings.effects.petals': true,
+      'settings.effects.confetti': true,
+      'settings.effects.celebrationSounds': true,
+      'settings.cake.showAge': true,
+    };
+  } else if (preset) {
+    update.$set = Object.fromEntries(FEATURE_KEYS.map((k) => [`features.${k}`, preset === 'all']));
+  } else {
+    update.$set = Object.fromEntries(Object.entries(features).map(([k, v]) => [`features.${k}`, v]));
+  }
+  const site = await SiteContent.findOneAndUpdate({ owner: req.user._id }, update, { new: true });
+  if (!site) throw new HttpError(404, 'Website not found');
+  // Anyone inside the private area is let out the moment it is switched off.
+  if (wasVault && !siteFeatures(site).vault) await destroyVaultSessionsForOwner(req.user._id);
+  res.json(await dashboardPayload(site));
+});
+
+/* --------------------------------------------------------- relationship */
+
+const relationshipSchema = z
+  .object({
+    mode: z.enum(MODES),
+    type: z.string().trim().max(40).optional(),
+    dryRun: z.boolean().optional(),
+    overwriteCustom: z.boolean().optional(),
+  })
+  .strict();
+
+const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/** Which starter-text fields are still untouched starter text (of either mode), and which the owner wrote themselves. */
+function classifyStarterText(site, letters) {
+  const love = starterFor('love');
+  const friend = starterFor('friendship');
+  const isStarter = (cur, key) => same(cur, love.site[key]) || same(cur, friend.site[key]);
+  const keepsCustom = [];
+  const replaceable = [];
+  for (const key of STARTER_SITE_FIELDS) {
+    const cur = key === 'future' ? plainFuture(site.future) : site[key];
+    (isStarter(cur, key) ? replaceable : keepsCustom).push(key);
+  }
+  const letterStates = {};
+  for (const l of letters) {
+    const lk = love.letters[l.key];
+    const fk = friend.letters[l.key];
+    const isStarterLetter = [lk, fk].some((x) => x && x.title === l.title && x.body === l.body);
+    letterStates[l.key] = isStarterLetter;
+    (isStarterLetter ? replaceable : keepsCustom).push(`letter:${l.key}`);
+  }
+  return { keepsCustom, replaceable, letterStates };
+}
+const plainFuture = (f) => ({
+  places: [...(f?.places || [])],
+  dreams: [...(f?.dreams || [])],
+  promises: [...(f?.promises || [])],
+  memories: [...(f?.memories || [])],
+});
+
+export const updateRelationship = asyncHandler(async (req, res) => {
+  const body = relationshipSchema.parse(req.body);
+  const type = body.type ?? defaultTypeFor(body.mode);
+  if (!isValidType(body.mode, type)) throw new HttpError(400, 'That relationship type does not belong to the chosen mode.');
+
+  const site = await mySite(req);
+  const current = siteRelationship(site);
+  const modeChanges = current.mode !== body.mode;
+  const letters = await Letter.find({ owner: req.user._id }).lean();
+
+  // `future` is compared field by field (it is one object in the starter, four arrays in the model).
+  const comparable = { ...site.toObject(), future: plainFuture(site.future) };
+  const { keepsCustom, replaceable, letterStates } = classifyStarterText(comparable, letters);
+  const willReplace = modeChanges ? (body.overwriteCustom ? [...replaceable, ...keepsCustom] : replaceable) : [];
+  const keeps = modeChanges ? (body.overwriteCustom ? [] : keepsCustom) : [];
+  const change = {
+    modeChanges,
+    willReplace,
+    keepsCustom: keeps,
+    suggestedThemes: modeChanges ? themesFor(body.mode).map((t) => t.id) : [],
+  };
+  if (body.dryRun) return res.json({ dryRun: true, ...change, change });
+
+  const $set = { 'relationship.mode': body.mode, 'relationship.type': type };
+  if (modeChanges) {
+    const starter = starterFor(body.mode);
+    for (const key of willReplace) {
+      if (key.startsWith('letter:')) continue;
+      if (key === 'future') for (const [k, v] of Object.entries(starter.site.future)) $set[`future.${k}`] = v;
+      else $set[key] = starter.site[key];
+    }
+    for (const key of willReplace.filter((k) => k.startsWith('letter:')).map((k) => k.slice(7))) {
+      const l = starter.letters[key];
+      // eslint-disable-next-line no-await-in-loop
+      if (l && (letterStates[key] || body.overwriteCustom)) await Letter.updateOne({ owner: req.user._id, key }, { $set: { title: l.title, body: l.body } });
+    }
+  }
+  await SiteContent.updateOne({ owner: req.user._id }, { $set });
+  return ok(req, res, { change });
+});
+
+/* ------------------------------------------------------------ appearance */
+
+const colour = z
+  .union([z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Colours look like #aabbcc').transform((v) => v.toLowerCase()), z.null()])
+  .optional();
+const appearanceSchema = z
+  .object({
+    theme: z.union([z.string().refine((v) => THEME_BY_ID[v], 'Unknown theme'), z.null()]).optional(),
+    primaryColor: colour,
+    secondaryColor: colour,
+    backgroundColor: colour,
+    textColor: colour,
+    buttonColor: colour,
+    font: z.union([z.string().refine((v) => FONT_BY_ID[v], 'Unknown font'), z.null()]).optional(),
+  })
+  .strict();
+
+export const updateAppearance = asyncHandler(async (req, res) => {
+  const data = appearanceSchema.parse(req.body);
+  const $set = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined).map(([k, v]) => [`appearance.${k}`, v]));
+  if (!Object.keys($set).length) throw new HttpError(400, 'Nothing to change.');
+  await SiteContent.updateOne({ owner: req.user._id }, { $set });
+  return ok(req, res);
+});
+
+/* ------------------------------------------------------- wording overrides */
+
+const copySchema = z
+  .object({ copy: z.partialRecord(z.enum(COPY_KEYS), z.union([z.string().max(300), z.null()])) })
+  .strict();
+
+export const updateCopy = asyncHandler(async (req, res) => {
+  const { copy } = copySchema.parse(req.body);
+  const $set = {};
+  const $unset = {};
+  for (const [k, v] of Object.entries(copy)) {
+    const text = typeof v === 'string' ? v.trim() : '';
+    if (text) $set[`copyOverrides.${k}`] = text;
+    else $unset[`copyOverrides.${k}`] = '';
+  }
+  const update = {};
+  if (Object.keys($set).length) update.$set = $set;
+  if (Object.keys($unset).length) update.$unset = $unset;
+  if (Object.keys(update).length) await SiteContent.updateOne({ owner: req.user._id }, update);
+  return ok(req, res);
+});
+
+/* ---------------------------------------------------------- page password */
+
+const pagePasswordSchema = z.object({ accountPassword: z.string().min(1).max(200), password: z.string().max(200) });
+
+export const setPagePassword = asyncHandler(async (req, res) => {
+  const { accountPassword, password } = pagePasswordSchema.parse(req.body);
+  await confirmAccountPassword(req.user._id, accountPassword);
+  const site = await mySite(req);
+  const problem = validateVaultPassword(password, { birthDate: site.birthDate, herName: site.herName });
+  if (problem) throw new HttpError(400, problem);
+  await SiteContent.updateOne(
+    { owner: req.user._id },
+    { sitePasswordHash: await bcrypt.hash(password, 12), sitePasswordSet: true, siteFailedAttempts: 0, siteLockedUntil: null },
+  );
+  await destroySiteSessionsForOwner(req.user._id); // everyone who was in has to enter the new password
+  return ok(req, res, { ok: true, passwordSet: true });
+});
+
+export const removePagePassword = asyncHandler(async (req, res) => {
+  const { accountPassword } = z.object({ accountPassword: z.string().min(1).max(200) }).parse(req.body);
+  await confirmAccountPassword(req.user._id, accountPassword);
+  await SiteContent.updateOne(
+    { owner: req.user._id },
+    { sitePasswordHash: null, sitePasswordSet: false, siteFailedAttempts: 0, siteLockedUntil: null },
+  );
+  await destroySiteSessionsForOwner(req.user._id);
+  return ok(req, res, { ok: true, passwordSet: false });
 });

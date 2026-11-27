@@ -3,6 +3,8 @@ import { AdminUser } from '../models/AdminUser.js';
 import { User } from '../models/User.js';
 import { SiteContent } from '../models/SiteContent.js';
 import { HttpError, asyncHandler } from '../utils/httpError.js';
+import { hasSiteAccess } from '../services/access.js';
+import { siteFeatures } from '../services/siteState.js';
 
 /**
  * Platform owner (AdminUser). Completely separate from customers: different collection, different cookie
@@ -80,3 +82,18 @@ export const vaultAuth = asyncHandler(async (req, res, next) => {
   req.auth = session;
   return next();
 });
+
+/** The page lock: while a password-protected page is locked for this browser, its private area is closed too. */
+export const requireSiteAccess = asyncHandler(async (req, res, next) => {
+  if (!(await hasSiteAccess(req, req.site))) throw new HttpError(403, 'This page is locked.');
+  return next();
+});
+
+/**
+ * A disabled feature is not merely hidden: its endpoints answer 404 like they never existed.
+ * Dependencies are applied (siteFeatures), so e.g. the journal is also closed when the vault is off.
+ */
+export const requireFeature = (key) => (req, res, next) => {
+  if (!siteFeatures(req.site)[key]) return next(new HttpError(404, 'Not found'));
+  return next();
+};

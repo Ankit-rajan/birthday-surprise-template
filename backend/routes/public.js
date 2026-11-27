@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getBirthday, getPublicMedia } from '../controllers/publicController.js';
-import { resolvePublicSite, vaultAuth, requireRole } from '../middleware/auth.js';
+import { getBirthday, getPublicMedia, unlockSite } from '../controllers/publicController.js';
+import { resolvePublicSite, vaultAuth, requireRole, requireSiteAccess, requireFeature } from '../middleware/auth.js';
 import { csrfProtect, originCheck } from '../middleware/csrf.js';
 import { unlockLimiter, publicSiteLimiter } from '../middleware/rateLimit.js';
 import { unlock, lock, sessionStatus, heartbeat, overview, getVaultMedia } from '../controllers/vaultController.js';
@@ -13,8 +13,12 @@ router.get('/media/:id', getPublicMedia);
 /* A published birthday page, plus its private vault. Everything is keyed by the slug in the URL. */
 router.get('/birthday/:slug', publicSiteLimiter, resolvePublicSite, getBirthday);
 
+router.post('/birthday/:slug/unlock-site', originCheck, unlockLimiter, resolvePublicSite, unlockSite);
+
 const vault = Router({ mergeParams: true });
 vault.use(resolvePublicSite);
+// Switched off = does not exist. A locked page keeps its private area closed as well.
+vault.use(requireFeature('vault'), requireSiteAccess);
 
 /* Open endpoints (no vault session needed) */
 vault.post('/unlock', originCheck, unlockLimiter, unlock);
@@ -30,6 +34,7 @@ vault.get('/overview', overview);
 vault.get('/media/:id', getVaultMedia);
 
 /* "Her Heart" journal: both roles read, only `her` writes */
+vault.use('/journal', requireFeature('journal'));
 vault.get('/journal', listEntries);
 vault.post('/journal', requireRole('her'), createEntry);
 vault.put('/journal/:id', requireRole('her'), updateEntry);
