@@ -10,6 +10,10 @@ const LIMITS = {
     idleMs: (env.vaultIdleSeconds + env.vaultServerGraceSeconds) * 1000,
     maxMs: env.vaultMaxMinutes * 60_000,
   },
+  site: {
+    idleMs: 12 * 3_600_000,
+    maxMs: 7 * DAY,
+  },
   admin: {
     idleMs: env.adminIdleMinutes * 60_000,
     maxMs: env.adminMaxHours * 3_600_000,
@@ -20,10 +24,12 @@ const LIMITS = {
   },
 };
 
-export const cookieName = { vault: 'vault_sid', admin: 'admin_sid', user: 'user_sid' };
+export const cookieName = { vault: 'vault_sid', admin: 'admin_sid', user: 'user_sid', site: 'site_sid' };
 // Each cookie is scoped to its own API prefix, so a customer cookie is never sent to platform-admin routes,
 // the platform-admin cookie is never sent to customer routes, and neither reaches the public vault routes.
-const cookiePath = { vault: '/api/birthday', admin: '/api/admin', user: '/api/app' };
+const cookiePath = { vault: '/api/birthday', admin: '/api/admin', user: '/api/app',
+  // /api covers both /api/birthday/* and /api/media/* (the photos of a locked page), and no other cookie shares this name.
+  site: '/api' };
 
 export async function createSession(type, { role, userId = null, owner = null, req }) {
   const token = crypto.randomBytes(32).toString('base64url');
@@ -74,6 +80,11 @@ export async function destroySessionsForUser(type, userId) {
 /** Every vault session of ONE site. Another customer's visitors are never affected. */
 export async function destroyVaultSessionsForOwner(owner) {
   await Session.deleteMany({ type: 'vault', owner });
+}
+
+/** Every visitor session of ONE page lock (password changed or removed). */
+export async function destroySiteSessionsForOwner(owner) {
+  await Session.deleteMany({ type: 'site', owner });
 }
 
 const cookieBase = (type) => ({

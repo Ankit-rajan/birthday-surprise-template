@@ -1,22 +1,14 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
 
-const ALL_LINKS = [
-  ['home', 'Home'],
-  ['gallery', 'Our world'],
-  ['story', 'Our story'],
-  ['reasons', 'Reasons'],
-  ['letter', 'Letter'],
-  ['open-when', 'Read when'],
-  ['future', 'Future'],
-  ['vault', 'Secret place'],
-];
-
-export default function NavBar({ siteName, showVault = true, topOffset = 0 }) {
-  const LINKS = ALL_LINKS.filter(([id]) => showVault || id !== 'vault');
-  const [open, setOpen] = useState(false);
+/**
+ * Navigation of a birthday page. `links` already contains ONLY the sections that exist (switched on and not empty), so a
+ * disabled section never has a link.
+ *  - large screens: links in the top bar
+ *  - phones: a bottom bar with every section visible as icon + label (swipe sideways when there are many). No hidden menu.
+ */
+export default function NavBar({ siteName, links, topOffset = 0 }) {
   const [solid, setSolid] = useState(false);
+  const [active, setActive] = useState(links[0]?.id);
 
   useEffect(() => {
     const onScroll = () => setSolid(window.scrollY > 60);
@@ -25,62 +17,68 @@ export default function NavBar({ siteName, showVault = true, topOffset = 0 }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Highlight the section that is on screen.
   useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => e.key === 'Escape' && setOpen(false);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+    const els = links.map((l) => document.getElementById(l.id)).filter(Boolean);
+    if (!els.length || typeof IntersectionObserver === 'undefined') return undefined;
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && setActive(e.target.id)),
+      { rootMargin: '-40% 0px -55% 0px' },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [links]);
+
+  // Keep the active chip visible in the scrolling bottom bar.
+  useEffect(() => {
+    document.getElementById(`nav-chip-${active}`)?.scrollIntoView?.({ inline: 'center', block: 'nearest' });
+  }, [active]);
 
   return (
-    <header style={{ top: topOffset }} className={`fixed inset-x-0 z-50 transition duration-500 ${solid ? 'bg-burgundy-dark/80 shadow-soft backdrop-blur-md' : ''}`}>
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4" aria-label="Main">
-        <a href="#home" className="font-script text-2xl text-gold-light">
-          {siteName}
-        </a>
-        <ul className="hidden items-center gap-6 lg:flex">
-          {LINKS.slice(1).map(([id, label]) => (
-            <li key={id}>
-              <a href={`#${id}`} className="text-[11px] uppercase tracking-[0.25em] text-ivory/70 transition hover:text-gold-light">
-                {label}
-              </a>
-            </li>
-          ))}
-        </ul>
-        <button
-          className="rounded-full p-2 text-ivory hover:bg-white/10 lg:hidden"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls="mobile-menu"
-          aria-label={open ? 'Close menu' : 'Open menu'}
-        >
-          {open ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </nav>
-
-      <AnimatePresence>
-        {open && (
-          <motion.ul
-            id="mobile-menu"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mx-4 mb-2 space-y-1 rounded-2xl border border-gold/20 bg-burgundy-dark/95 p-3 backdrop-blur-md lg:hidden"
-          >
-            {LINKS.map(([id, label]) => (
+    <>
+      <header style={{ top: topOffset }} className={`fixed inset-x-0 z-50 transition duration-500 ${solid ? 'bg-burgundy-dark/80 shadow-soft backdrop-blur-md' : ''}`}>
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3 sm:py-4" aria-label="Main">
+          <a href="#home" className="max-w-[70vw] truncate font-script text-2xl text-gold-light">
+            {siteName}
+          </a>
+          <ul className="hidden items-center gap-6 lg:flex">
+            {links.filter((l) => l.id !== 'home').map(({ id, label }) => (
               <li key={id}>
                 <a
                   href={`#${id}`}
-                  onClick={() => setOpen(false)}
-                  className="block rounded-xl px-4 py-3 text-sm uppercase tracking-[0.25em] text-ivory/80 hover:bg-white/10"
+                  aria-current={active === id ? 'true' : undefined}
+                  className={`text-[11px] uppercase tracking-[0.25em] transition hover:text-gold-light ${active === id ? 'text-gold-light' : 'text-ivory/70'}`}
                 >
                   {label}
                 </a>
               </li>
             ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
-    </header>
+          </ul>
+        </nav>
+      </header>
+
+      <nav
+        aria-label="Sections"
+        className="fixed inset-x-0 bottom-0 z-[55] border-t border-gold/20 bg-burgundy-dark/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+      >
+        <ul className="no-scrollbar flex snap-x gap-1 overflow-x-auto px-2 py-1.5">
+          {links.map(({ id, label, Icon }) => (
+            <li key={id} className="shrink-0 snap-start">
+              <a
+                id={`nav-chip-${id}`}
+                href={`#${id}`}
+                aria-current={active === id ? 'true' : undefined}
+                className={`flex min-h-[52px] min-w-[64px] flex-col items-center justify-center gap-0.5 rounded-xl px-2.5 text-[11px] leading-tight transition ${
+                  active === id ? 'bg-gold/15 text-gold-light' : 'text-ivory/65 active:bg-white/10'
+                }`}
+              >
+                <Icon size={19} aria-hidden="true" />
+                <span className="max-w-[5.5rem] truncate">{label}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </>
   );
 }

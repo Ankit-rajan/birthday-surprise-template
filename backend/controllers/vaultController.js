@@ -14,6 +14,7 @@ import {
   cookieName,
 } from '../services/sessions.js';
 import { streamAsset } from '../services/media.js';
+import { siteFeatures } from '../services/siteState.js';
 import { HttpError, asyncHandler, objectId } from '../utils/httpError.js';
 
 /*
@@ -99,8 +100,9 @@ export const overview = asyncHandler(async (req, res) => {
     PrivateMessage.find({ owner }).lean(),
   ]);
 
+  const f = siteFeatures(req.site);
   const media = mediaDocs
-    .filter((m) => m.asset && m.asset.visibility === 'private' && String(m.asset.owner) === String(owner))
+    .filter((m) => m.asset && (m.asset.kind === 'video' ? f.privateVideos : f.privatePhotos) && m.asset.visibility === 'private' && String(m.asset.owner) === String(owner))
     .sort(byDateThenCreated)
     .map((m) => ({
       id: String(m._id),
@@ -113,9 +115,10 @@ export const overview = asyncHandler(async (req, res) => {
       date: m.date,
     }));
 
+  const allowed = { secret: f.secretMessages, diary: f.personalNotes, letter: f.privateLetters };
   const ofKind = (kind) =>
     messages
-      .filter((m) => m.kind === kind)
+      .filter((m) => allowed[kind] && m.kind === kind)
       .sort(byDateThenCreated)
       .map((m) => ({ id: String(m._id), title: m.title, body: m.body, date: m.date }));
 
@@ -125,6 +128,7 @@ export const overview = asyncHandler(async (req, res) => {
 /** Private bytes: requires an unlocked vault session for THIS site AND an asset owned by this site's owner. */
 export const getVaultMedia = asyncHandler(async (req, res) => {
   const asset = await MediaAsset.findOne({ _id: objectId(req.params.id), owner: req.site.owner });
-  if (!asset || asset.visibility !== 'private') throw new HttpError(404, 'Not found');
+  const f = siteFeatures(req.site);
+  if (!asset || asset.visibility !== 'private' || !(asset.kind === 'video' ? f.privateVideos : f.privatePhotos)) throw new HttpError(404, 'Not found');
   streamAsset(req, res, asset, { thumb: req.query.thumb === '1' });
 });

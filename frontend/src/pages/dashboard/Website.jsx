@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { PageTitle } from './DashboardLayout.jsx';
 import ContentTab from '../../components/dashboard/ContentTab.jsx';
@@ -14,12 +15,13 @@ const TABS = [
   ['letters', 'Letters', LettersTab],
   ['private-media', 'Private photos & videos', PrivateMediaTab],
   ['messages', 'Private messages', MessagesTab],
-  ['security', 'Private area password', SecurityTab],
+  ['security', 'Passwords & privacy', SecurityTab],
 ];
 
 /** "My Birthday Website": every part of the page, one tab each. */
 export default function Website() {
-  const [tab, setTab] = useState('content');
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState(TABS.some(([id]) => id === params.get('tab')) ? params.get('tab') : 'content');
   const Active = TABS.find(([id]) => id === tab)[2];
   return (
     <>

@@ -1,3 +1,4 @@
+import { useCopy } from '../../hooks/SiteConfig.jsx';
 import { useRef, useState } from 'react';
 import { motion, useAnimationControls } from 'framer-motion';
 import { Eye, EyeOff, Lock, Unlock } from 'lucide-react';
@@ -24,6 +25,7 @@ function GoldLock({ opening }) {
 }
 
 export default function LockScreen({ herName = 'the birthday person' }) {
+  const t = useCopy();
   const vault = useVault();
   const controls = useAnimationControls();
   const inputRef = useRef(null);
@@ -47,7 +49,7 @@ export default function LockScreen({ herName = 'the birthday person' }) {
       setPassword('');
       setError(
         err.status === 401
-          ? 'That is not the password. Try again, my love.'
+          ? t('vaultWrongPassword')
           : err.status === 429
             ? err.message
             : err.status === 503
@@ -66,9 +68,9 @@ export default function LockScreen({ herName = 'the birthday person' }) {
       <Petals density={0.25} />
       <motion.div animate={controls} className="relative z-10 mx-auto max-w-md text-center">
         <GoldLock opening={success} />
-        <p className="eyebrow mb-3">Private love vault</p>
-        <h2 className="font-serif text-4xl text-ivory md:text-5xl">Our Little Secret Place</h2>
-        <p className="mt-3 font-serif text-xl italic text-gold-light/90">Some memories are just for us.</p>
+        <p className="eyebrow mb-3">{t('vaultEyebrow')}</p>
+        <h2 className="font-serif text-[2rem] text-ivory sm:text-4xl md:text-5xl">{t('vaultTitle')}</h2>
+        <p className="mt-3 font-serif text-xl italic text-gold-light/90">{t('vaultSubtitle')}</p>
 
         {vault.hint && (
           <p className="mx-auto mt-6 rounded-xl border border-dashed border-gold/50 px-4 py-3 text-sm text-gold-light">{vault.hint}</p>
@@ -90,8 +92,8 @@ export default function LockScreen({ herName = 'the birthday person' }) {
             <legend className="mb-2 block text-center text-[11px] uppercase tracking-[0.3em] text-ivory/60">Who is opening it?</legend>
             <div className="grid grid-cols-2 gap-3">
               {[
-                ['her', `I am ${herName}`],
-                ['him', "I'm her person"],
+                ['her', t('vaultRoleOwner', { name: herName })],
+                ['him', t('vaultRoleSender')],
               ].map(([value, label]) => (
                 <label
                   key={value}
@@ -118,7 +120,7 @@ export default function LockScreen({ herName = 'the birthday person' }) {
                 type={show ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Our secret password"
+                placeholder={t('vaultPlaceholder')}
                 autoComplete="off"
                 autoCapitalize="none"
                 autoCorrect="off"

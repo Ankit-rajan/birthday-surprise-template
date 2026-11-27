@@ -95,6 +95,7 @@ export const makeVaultApi = (slug) => {
 
 export const api = {
   birthday: (slug) => request('public', 'GET', `/birthday/${encodeURIComponent(slug)}`),
+  unlockSite: (slug, password) => request('public', 'POST', `/birthday/${encodeURIComponent(slug)}/unlock-site`, { body: { password } }),
 
   auth: {
     me: () => app('GET', '/auth/me'),
@@ -109,11 +110,20 @@ export const api = {
     // The whole dashboard payload: link name, publish state, storage, and the editable content.
     site: () => app('GET', '/site'),
     preview: () => app('GET', '/preview'),
+    // Unsaved feature / relationship choices rendered by the server without saving anything.
+    previewDraft: (body) => app('POST', '/preview', { body }),
     publish: (acknowledgePlaceholders = false) => app('POST', '/site/publish', { body: { acknowledgePlaceholders } }),
     unpublish: () => app('POST', '/site/unpublish'),
     checkSlug: (slug) => app('GET', `/site/slug-available?slug=${encodeURIComponent(slug)}`),
     saveSlug: (slug) => app('PUT', '/site/slug', { body: { slug } }),
     saveSettings: (settings) => app('PUT', '/site/settings', { body: settings }),
+    // Universal builder: each call returns the whole dashboard payload (content.features, content.relationship, ...).
+    saveFeatures: (body) => app('PUT', '/site/features', { body }),
+    saveRelationship: (body) => app('PUT', '/site/relationship', { body }),
+    saveAppearance: (body) => app('PUT', '/site/appearance', { body }),
+    saveCopy: (copy) => app('PUT', '/site/copy', { body: { copy } }),
+    setPagePassword: (accountPassword, password) => app('PUT', '/site/password', { body: { accountPassword, password } }),
+    removePagePassword: (accountPassword) => app('DELETE', '/site/password', { body: { accountPassword } }),
     applyStarter: (template) => app('POST', '/site/starter', { body: { template } }),
 
     // Content helpers return just the editable content object.

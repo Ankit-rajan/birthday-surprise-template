@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from '../hooks/SiteConfig.jsx';
 import Petals from './Petals.jsx';
 import { playOpenMoment, startMusic, unlockAudio } from '../utils/sound.js';
 import { useSiteFx } from '../hooks/SiteFx.jsx';
+import { useCopy, useFeatures } from '../hooks/SiteConfig.jsx';
 
 /**
  * Cinematic opening. The envelope is built from layered clip-paths; GSAP drives the open sequence:
@@ -11,6 +12,8 @@ import { useSiteFx } from '../hooks/SiteFx.jsx';
  */
 export default function Intro({ site, onOpened }) {
   const fx = useSiteFx();
+  const f = useFeatures();
+  const t = useCopy();
   const rootRef = useRef(null);
   const flapRef = useRef(null);
   const letterRef = useRef(null);
@@ -33,7 +36,7 @@ export default function Intro({ site, onOpened }) {
     setOpening(true);
     // First tap on the page: this is the moment browsers allow sound, so the song starts here.
     unlockAudio();
-    startMusic(site.music?.url);
+    if (f.backgroundMusic) startMusic(site.music?.url);
     if (fx.sounds) playOpenMoment();
     const k = reduce ? 0.01 : 1;
     const tl = gsap.timeline({ onComplete: onOpened });
@@ -62,17 +65,17 @@ export default function Intro({ site, onOpened }) {
       )}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,rgba(123,26,53,0.75),rgba(36,6,16,0.96)_70%)]"
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,rgb(var(--c-burgundy-soft)/0.75),rgb(var(--c-burgundy-dark)/0.96)_70%)]"
       />
       <Petals density={1.1} />
 
       <div className="relative z-10 mx-auto flex h-full max-w-3xl flex-col items-center justify-center px-6 text-center">
         <div ref={textRef} className="mb-10 md:mb-14">
           <p className="eyebrow mb-5">{site.herName}</p>
-          <h1 className="font-serif text-[2.4rem] italic leading-[1.1] text-ivory sm:text-5xl md:text-7xl">
+          <h1 className="break-words font-serif text-[2.1rem] italic leading-[1.1] text-ivory sm:text-5xl md:text-7xl">
             {site.introHeading}
           </h1>
-          <p className="mt-5 font-serif text-lg italic text-gold-light/90 md:text-2xl">{site.introSubtitle}</p>
+          {site.introSubtitle && <p className="mt-5 font-serif text-lg italic text-gold-light/90 md:text-2xl">{site.introSubtitle}</p>}
         </div>
 
         {/* Envelope */}
@@ -83,7 +86,7 @@ export default function Intro({ site, onOpened }) {
               ref={letterRef}
               className="absolute inset-x-5 top-4 bottom-3 z-[2] flex items-center justify-center rounded-sm bg-ivory shadow-md"
             >
-              <span className="font-script text-4xl text-burgundy">{site.herName} &hearts;</span>
+              <span className="font-script text-4xl text-burgundy">{t('introSeal')}</span>
             </div>
             <div
               className="absolute inset-0 z-[3] rounded-md bg-gradient-to-b from-burgundy to-burgundy-deep"
@@ -99,9 +102,9 @@ export default function Intro({ site, onOpened }) {
         </div>
 
         <button onClick={open} disabled={opening} className="btn-gold mt-12 md:mt-16">
-          Open your surprise &#9825;
+          {t('introButton')}
         </button>
-        <p className="mt-5 text-[11px] uppercase tracking-[0.3em] text-ivory/45">Turn your sound on &#9835;</p>
+        {(f.music || f.celebrationSounds) && <p className="mt-5 text-[11px] uppercase tracking-[0.3em] text-ivory/45">{t('introSound')}</p>}
       </div>
     </div>
   );

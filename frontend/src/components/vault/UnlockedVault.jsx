@@ -5,18 +5,24 @@ import { useVault } from '../../hooks/VaultContext.jsx';
 import PrivateMemories from './PrivateMemories.jsx';
 import { SecretMessages, SecretDiary, LettersForYou } from './MessageTabs.jsx';
 import HerHeart from './HerHeart.jsx';
+import { useCopy, useFeatures } from '../../hooks/SiteConfig.jsx';
 
+// `on` says which switch must be ON for a tab to exist. A disabled tab is not rendered, and its data is not sent by the server either.
 const TABS = [
-  { id: 'memories', label: 'Private memories', Icon: Camera },
-  { id: 'messages', label: 'Secret messages', Icon: MessageCircleHeart },
-  { id: 'diary', label: 'Secret diary', Icon: NotebookPen },
-  { id: 'letters', label: 'Letters for you', Icon: Mail },
-  { id: 'heart', label: 'Her heart', Icon: BookHeart },
+  { id: 'memories', label: 'vaultTabMemories', Icon: Camera, on: (f) => f.privateMedia && (f.privatePhotos || f.privateVideos) },
+  { id: 'messages', label: 'vaultTabMessages', Icon: MessageCircleHeart, on: (f) => f.secretMessages },
+  { id: 'diary', label: 'vaultTabDiary', Icon: NotebookPen, on: (f) => f.personalNotes },
+  { id: 'letters', label: 'vaultTabLetters', Icon: Mail, on: (f) => f.privateLetters },
+  { id: 'heart', label: 'vaultTabHeart', Icon: BookHeart, on: (f) => f.journal },
 ];
 
 export default function UnlockedVault() {
   const vault = useVault();
-  const [tab, setTab] = useState('memories');
+  const t = useCopy();
+  const f = useFeatures();
+  const tabs = TABS.filter((x) => x.on(f));
+  const [picked, setTab] = useState(null);
+  const tab = tabs.some((x) => x.id === picked) ? picked : tabs[0]?.id;
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
@@ -41,8 +47,8 @@ export default function UnlockedVault() {
         <header className="mb-10 flex flex-col items-center gap-6 text-center md:flex-row md:justify-between md:text-left">
           <div>
             <p className="eyebrow mb-2">Unlocked</p>
-            <h2 className="font-serif text-4xl text-ivory md:text-5xl">Our Little Secret Place</h2>
-            <p className="mt-2 font-serif text-lg italic text-gold-light/90">Some memories are just for us.</p>
+            <h2 className="font-serif text-[2rem] text-ivory sm:text-4xl md:text-5xl">{t('vaultTitle')}</h2>
+            <p className="mt-2 font-serif text-lg italic text-gold-light/90">{t('vaultSubtitle')}</p>
           </div>
           <button onClick={() => vault.lock()} className="btn-gold shrink-0">
             <Lock size={16} aria-hidden="true" /> Lock again &#128274;
@@ -56,7 +62,7 @@ export default function UnlockedVault() {
         )}
 
         <div role="tablist" aria-label="Vault sections" className="no-scrollbar mb-10 flex gap-2 overflow-x-auto pb-2 md:justify-center">
-          {TABS.map(({ id, label, Icon }) => (
+          {tabs.map(({ id, label, Icon }) => (
             <button
               key={id}
               role="tab"
@@ -64,11 +70,11 @@ export default function UnlockedVault() {
               aria-selected={tab === id}
               aria-controls={`panel-${id}`}
               onClick={() => setTab(id)}
-              className={`flex shrink-0 items-center gap-2 rounded-full border px-5 py-2.5 text-xs uppercase tracking-[0.18em] transition ${
+              className={`flex min-h-[44px] shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-xs uppercase tracking-[0.18em] transition ${
                 tab === id ? 'border-gold bg-gold/15 text-gold-light' : 'border-white/15 text-ivory/65 hover:border-gold/50'
               }`}
             >
-              <Icon size={15} aria-hidden="true" /> {label}
+              <Icon size={15} aria-hidden="true" /> {t(label)}
             </button>
           ))}
         </div>
@@ -93,7 +99,9 @@ export default function UnlockedVault() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            {tab === 'heart' ? (
+            {!tab ? (
+              <p className="text-center font-serif text-xl italic text-ivory/60">Nothing is in here yet.</p>
+            ) : tab === 'heart' ? (
               <HerHeart />
             ) : !data ? (
               !error && <p className="animate-pulse text-center font-serif text-xl italic text-ivory/60">Opening&hellip;</p>

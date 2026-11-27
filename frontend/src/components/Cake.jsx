@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useReducedMotion } from '../hooks/SiteConfig.jsx';
 import Confetti from './Confetti.jsx';
+import Fireworks from './Fireworks.jsx';
 import { playCelebration, playHappyBirthday, playSparkle } from '../utils/sound.js';
 import { useSiteFx } from '../hooks/SiteFx.jsx';
 
@@ -74,6 +76,7 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
   return (
     <div className="mx-auto flex max-w-md flex-col items-center">
       <Confetti trigger={burst} />
+      <Fireworks trigger={burst} />
 
       <svg viewBox="0 0 320 300" className="w-full max-w-[360px]" role="img" aria-label={`A birthday cake with ${lit ? 'lit' : 'blown-out'} candles`}>
         <defs>
@@ -86,8 +89,8 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
             <stop offset="1" stopColor={theme.top[1]} />
           </linearGradient>
           <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#ecd9b0" />
-            <stop offset="1" stopColor="#b08d57" />
+            <stop offset="0" style={{ stopColor: 'rgb(var(--c-gold-light, 236 217 176))' }} />
+            <stop offset="1" style={{ stopColor: 'rgb(var(--c-gold-dark, 176 141 87))' }} />
           </linearGradient>
           <radialGradient id="flameGlow">
             <stop offset="0" stopColor="#ffd98a" stopOpacity="0.7" />
@@ -146,6 +149,7 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
         ))}
       </svg>
 
+      {fx.candles && (
       <div className="mt-6 min-h-[200px] text-center" aria-live="polite">
         <AnimatePresence mode="wait">
           {stage === 'lit' && (
@@ -158,7 +162,7 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
           )}
           {stage === 'wishing' && (
             <motion.div key="wishing" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-              <p className="mx-auto mb-3 max-w-sm font-serif text-xl italic text-gold-light">{wishPrompt}</p>
+              {wishPrompt && <p className="mx-auto mb-3 max-w-sm font-serif text-xl italic text-gold-light">{wishPrompt}</p>}
               <div className="mb-5 min-h-[2.25rem]">
                 <AnimatePresence mode="wait">
                   {lyric >= 0 && (
@@ -182,7 +186,7 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
           )}
           {stage === 'blown' && (
             <motion.div key="blown" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <p className="mx-auto max-w-sm font-serif text-2xl italic leading-snug text-gold-light">{afterWishMessage}</p>
+              {afterWishMessage && <p className="mx-auto max-w-sm font-serif text-2xl italic leading-snug text-gold-light">{afterWishMessage}</p>}
               <button className="btn-ghost mt-6" onClick={relight}>
                 Light them again
               </button>
@@ -190,6 +194,7 @@ export default function Cake({ name = 'Birthday Star', age, wishPrompt, afterWis
           )}
         </AnimatePresence>
       </div>
+      )}
     </div>
   );
 }

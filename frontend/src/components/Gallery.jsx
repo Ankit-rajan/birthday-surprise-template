@@ -3,8 +3,11 @@ import { motion } from 'framer-motion';
 import SectionHeading from './SectionHeading.jsx';
 import Lightbox from './Lightbox.jsx';
 import { formatDate } from '../utils/format.js';
+import { useCopy, useFeatures } from '../hooks/SiteConfig.jsx';
 
 function Polaroid({ photo, index, onOpen }) {
+  const t = useCopy();
+  const f = useFeatures();
   const tilt = [-2.2, 1.6, -1.2, 2.4, -0.6, 1.1][index % 6];
   const ratio = photo.width && photo.height ? `${photo.width} / ${photo.height}` : '4 / 5';
   return (
@@ -24,7 +27,7 @@ function Polaroid({ photo, index, onOpen }) {
         <div className="overflow-hidden bg-burgundy-deep/10" style={{ aspectRatio: ratio }}>
           <img
             src={photo.thumbUrl}
-            alt={photo.caption || 'A memory of us'}
+            alt={photo.caption || t('galleryAlt')}
             loading="lazy"
             decoding="async"
             className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
@@ -42,6 +45,7 @@ function Polaroid({ photo, index, onOpen }) {
 }
 
 export default function Gallery({ gallery }) {
+  const t = useCopy();
   const [openIndex, setOpenIndex] = useState(null);
   const items = useMemo(
     () => gallery.map((g) => ({ type: 'image', src: g.url, caption: g.caption, date: g.date })),
@@ -50,19 +54,13 @@ export default function Gallery({ gallery }) {
 
   return (
     <section id="gallery" className="section-pad bg-gradient-to-b from-midnight to-burgundy-dark">
-      <SectionHeading eyebrow="Our little world" title="Moments I keep close" subtitle="Every picture is a small door back to a day I never want to forget." />
+      <SectionHeading eyebrow={t('galleryEyebrow')} title={t('galleryTitle')} subtitle={t('gallerySubtitle')} />
 
-      {gallery.length === 0 ? (
-        <p className="mx-auto max-w-md text-center font-serif text-xl italic text-ivory/60">
-          Edit in My Dashboard &rsaquo; My Birthday Website &rsaquo; Gallery. Upload photos here, each with a caption and date. Example: &ldquo;Our first trip, 2024&rdquo;. &#9825;
-        </p>
-      ) : (
-        <div className="mx-auto max-w-6xl columns-2 gap-5 sm:gap-6 md:columns-3 lg:columns-4">
-          {gallery.map((photo, i) => (
-            <Polaroid key={photo.id} photo={photo} index={i} onOpen={setOpenIndex} />
-          ))}
-        </div>
-      )}
+      <div className="mx-auto max-w-6xl columns-2 gap-4 sm:gap-6 md:columns-3 lg:columns-4">
+        {gallery.map((photo, i) => (
+          <Polaroid key={photo.id} photo={photo} index={i} onOpen={setOpenIndex} />
+        ))}
+      </div>
 
       <Lightbox items={items} index={openIndex} onIndex={setOpenIndex} onClose={() => setOpenIndex(null)} />
     </section>

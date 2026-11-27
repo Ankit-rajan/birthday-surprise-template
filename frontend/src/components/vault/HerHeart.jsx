@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Pencil, Trash2, X } from 'lucide-react';
 import { useVault } from '../../hooks/VaultContext.jsx';
 import { formatDateTime } from '../../utils/format.js';
+import { useCopy } from '../../hooks/SiteConfig.jsx';
 
 const PLACEHOLDER =
   "Whatever is on your mind, whatever is in your heart… you can write it all here. I'll always want to listen.";
@@ -120,6 +121,7 @@ function Editor({ initial, onSave, onCancel, saving, error, autoFocus }) {
 }
 
 export default function HerHeart() {
+  const t = useCopy();
   const { role, api: vaultApi } = useVault();
   const isHer = role === 'her';
   const [entries, setEntries] = useState(null);
@@ -202,11 +204,11 @@ export default function HerHeart() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="paper rounded-md px-6 py-10 md:px-12 md:py-14">
-        <p className="text-center text-[11px] font-medium uppercase tracking-[0.42em] text-burgundy">Her heart &mdash; a space just for you</p>
-        <h3 className="mt-3 text-center font-script text-5xl text-burgundy md:text-6xl">Tell me what&rsquo;s on your heart &#10084;&#65039;</h3>
+        <p className="text-center text-[11px] font-medium uppercase tracking-[0.42em] text-burgundy">{t('heartEyebrow')}</p>
+        <h3 className="mt-3 text-center font-script text-5xl text-burgundy md:text-6xl">{t('heartTitle')}</h3>
 
         <p className="mx-auto mt-6 max-w-xl rounded-xl border border-burgundy/15 bg-burgundy/[0.04] px-4 py-3 text-center text-sm leading-relaxed text-burgundy-dark/80">
-          This is a <strong>shared private space</strong>. Only the two of you can open it, but anything you <em>save</em> here can be read by him.
+          This is a <strong>shared private space</strong>. Only the two of you can open it, but anything you <em>save</em> here can be read by {t('heartReader')}.
           Nothing is shared while you are still typing. Only what you choose to save.
         </p>
 
@@ -295,7 +297,7 @@ export default function HerHeart() {
       </div>
 
       <p className="mx-auto mt-16 max-w-xl text-center font-serif text-xl italic leading-relaxed text-gold-light">
-        Your feelings matter to me. You never have to hide what&rsquo;s in your heart. This little space is always yours. &#10084;&#65039;
+        Your feelings matter to me. You never have to hide what&rsquo;s on your mind. This little space is always yours.
       </p>
 
       <AnimatePresence>

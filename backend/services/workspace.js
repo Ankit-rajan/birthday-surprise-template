@@ -14,24 +14,35 @@ import { DEFAULT_LETTERS, DEFAULT_TIMELINE } from './defaults.js';
 import { generateSlug } from './slug.js';
 import { deleteAsset } from './media.js';
 import { toDate } from '../utils/httpError.js';
+import { starterFor } from './starters.js';
+import { DEFAULT_MODE, defaultTypeFor, themesFor } from './siteConfig/siteConfig.js';
 
 /** Loaded once. Fictional sample content, offered only as an explicit, opt-in starter template. */
 export const AANYA_STARTER = JSON.parse(fs.readFileSync(new URL('./starters/aanya.json', import.meta.url), 'utf8'));
 
 /** Creates the guided (blank) workspace for a brand-new customer. */
-export async function provisionWorkspace(user) {
+export async function provisionWorkspace(user, { mode = DEFAULT_MODE, type } = {}) {
+  const relationship = { mode, type: type || defaultTypeFor(mode) };
+  const friendly = mode !== DEFAULT_MODE;
+  const starter = starterFor(mode);
   let site = null;
   for (let attempt = 0; attempt < 4 && !site; attempt += 1) {
     try {
       // eslint-disable-next-line no-await-in-loop
-      site = await SiteContent.create({ owner: user._id, slug: await generateSlug(user.name) });
+      site = await SiteContent.create({
+        owner: user._id,
+        slug: await generateSlug(user.name),
+        relationship,
+        // Love keeps the classic look exactly as before; Friendship starts with its first friendship preset (changeable).
+        ...(friendly ? { ...starter.site, appearance: { theme: themesFor(mode)[0].id } } : {}),
+      });
     } catch (err) {
       if (err?.code !== 11000) throw err; // slug raced with another signup: pick another
     }
   }
   if (!site) throw new Error('Could not allocate a link name');
-  await Letter.insertMany(DEFAULT_LETTERS.map((l) => ({ ...l, owner: user._id })));
-  await TimelineEntry.insertMany(DEFAULT_TIMELINE.map((t) => ({ ...t, owner: user._id })));
+  await Letter.insertMany(DEFAULT_LETTERS.map((l) => ({ ...l, ...(starter.letters[l.key] || {}), owner: user._id })));
+  await TimelineEntry.insertMany((friendly ? starter.timeline : DEFAULT_TIMELINE).map((t) => ({ ...t, date: null, owner: user._id })));
   return site;
 }
 

@@ -14,6 +14,7 @@ const DashboardLayout = lazy(() => import('./pages/dashboard/DashboardLayout.jsx
 const Overview = lazy(() => import('./pages/dashboard/Overview.jsx'));
 const Website = lazy(() => import('./pages/dashboard/Website.jsx'));
 const Customize = lazy(() => import('./pages/dashboard/Customize.jsx'));
+const Features = lazy(() => import('./pages/dashboard/Features.jsx'));
 const Account = lazy(() => import('./pages/dashboard/Account.jsx'));
 const Preview = lazy(() => import('./pages/dashboard/Preview.jsx'));
 
@@ -36,6 +37,9 @@ export default function App() {
             <Route index element={<Overview />} />
             <Route path="website" element={<Website />} />
             <Route path="customize" element={<Customize />} />
+            <Route path="features" element={<Features />} />
+            <Route path="relationship" element={<Navigate to="/dashboard/customize?tab=relationship" replace />} />
+            <Route path="appearance" element={<Navigate to="/dashboard/customize?tab=appearance" replace />} />
             <Route path="account" element={<Account />} />
           </Route>
           <Route path="/dashboard/preview" element={<RequireCustomer><Preview /></RequireCustomer>} />

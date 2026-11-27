@@ -4,6 +4,7 @@ import { api, makeVaultApi } from '../services/api.js';
 import BirthdaySite from '../components/BirthdaySite.jsx';
 import { Loading } from '../components/RouteGuards.jsx';
 import Petals from '../components/Petals.jsx';
+import PageLock from '../components/PageLock.jsx';
 import { useDocumentMeta } from '../hooks/useDocumentMeta.js';
 
 function Unavailable() {
@@ -29,6 +30,7 @@ function Unavailable() {
 export default function PublicBirthday() {
   const { slug } = useParams();
   const [state, setState] = useState({ status: 'loading' });
+  const [reloadKey, setReloadKey] = useState(0);
   const vaultApi = useMemo(() => makeVaultApi(slug), [slug]);
   const title = state.status === 'ready' ? state.data.site.siteName : 'Birthday surprise';
   useDocumentMeta({ title, noindex: true }); // private gifts: keep them out of search engines
@@ -37,15 +39,16 @@ export default function PublicBirthday() {
     let cancelled = false;
     setState({ status: 'loading' });
     api.birthday(slug)
-      .then((data) => !cancelled && setState(data.redirectTo ? { status: 'redirect', to: data.redirectTo } : { status: 'ready', data }))
+      .then((data) => !cancelled && setState(data.redirectTo ? { status: 'redirect', to: data.redirectTo } : data.locked ? { status: 'locked' } : { status: 'ready', data }))
       .catch(() => !cancelled && setState({ status: 'missing' }));
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, reloadKey]);
 
   if (state.status === 'loading') return <Loading label="Opening your surprise" />;
   if (state.status === 'redirect') return <Navigate to={`/birthday/${state.to}`} replace />;
   if (state.status === 'missing') return <Unavailable />;
+  if (state.status === 'locked') return <PageLock slug={slug} onUnlocked={() => setReloadKey((n) => n + 1)} />;
   return <BirthdaySite key={slug} data={state.data} mode="public" vaultApi={vaultApi} />;
 }

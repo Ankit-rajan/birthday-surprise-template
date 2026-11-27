@@ -17,6 +17,7 @@ import { provisionWorkspace, deleteAccountAndData } from '../services/workspace.
 import { sendPasswordReset } from '../services/mailer.js';
 import { HttpError, asyncHandler } from '../utils/httpError.js';
 import { validateUserPassword } from '../utils/passwordPolicy.js';
+import { MODES, isValidType, defaultTypeFor } from '../services/siteConfig/siteConfig.js';
 
 const BCRYPT_COST = 12;
 const FAKE_HASH = bcrypt.hashSync('not-a-real-password', BCRYPT_COST); // uniform timing for unknown emails
@@ -25,7 +26,13 @@ const sha256 = (v) => crypto.createHash('sha256').update(v).digest('hex');
 const nameField = z.string().trim().min(1, 'Please enter your name').max(80);
 const emailField = z.string().trim().toLowerCase().email('Please enter a valid email address').max(254);
 
-const registerSchema = z.object({ name: nameField, email: emailField, password: z.string().max(200) });
+const registerSchema = z.object({
+  name: nameField,
+  email: emailField,
+  password: z.string().max(200),
+  relationshipMode: z.enum(MODES).optional(),
+  relationshipType: z.string().trim().max(40).optional(),
+});
 const loginSchema = z.object({ email: emailField, password: z.string().min(1).max(200), remember: z.boolean().optional() });
 
 /** The only shape of a user that ever leaves the server. Never includes hashes, tokens or lockout counters. */
@@ -47,7 +54,9 @@ const siteSummary = async (userId) => {
 
 export const register = asyncHandler(async (req, res) => {
   if (!env.registrationOpen) throw new HttpError(403, 'Sign-ups are closed right now.');
-  const { name, email, password } = registerSchema.parse(req.body);
+  const { name, email, password, relationshipMode = 'love', relationshipType } = registerSchema.parse(req.body);
+  const type = relationshipType || defaultTypeFor(relationshipMode);
+  if (!isValidType(relationshipMode, type)) throw new HttpError(400, 'That relationship type does not belong to the chosen mode.');
   const problem = validateUserPassword(password, { email, name });
   if (problem) throw new HttpError(400, problem);
 
@@ -60,7 +69,7 @@ export const register = asyncHandler(async (req, res) => {
     throw err;
   }
   try {
-    await provisionWorkspace(user);
+    await provisionWorkspace(user, { mode: relationshipMode, type });
   } catch (err) {
     await deleteAccountAndData(user._id).catch(() => {}); // never leave a half-created account behind
     throw err;

@@ -84,8 +84,9 @@ function MediaCard({ item, onSave, onDelete, busy }) {
 export const GalleryTab = ({ onExpired }) => (
   <MediaManager
     resource="gallery"
-    accept="image/jpeg,image/png,image/webp"
-    intro="Public gallery photographs (20 to 50 works well). Use your real photographs only."
+    accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
+    allowVideo
+    intro="Public gallery photographs and short videos (20 to 50 photos works well). Use your real photographs only. Videos appear in their own section on your page."
     onExpired={onExpired}
   />
 );

@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/AuthContext.jsx';
 import { useDocumentMeta } from '../hooks/useDocumentMeta.js';
 import { safeNext } from '../components/RouteGuards.jsx';
 import { api } from '../services/api.js';
+import { CONFIG, typesFor, defaultTypeFor } from '../config/siteConfig/siteConfig.js';
 
 function AuthShell({ title, subtitle, children, footer }) {
   return (
@@ -93,7 +94,7 @@ export function Register() {
   useDocumentMeta({ title: 'Create your account', noindex: true });
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', mode: 'love', type: 'partner' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -103,7 +104,7 @@ export function Register() {
     if (form.password !== form.confirm) return setError('The two passwords do not match.');
     setBusy(true);
     try {
-      await register({ name: form.name, email: form.email, password: form.password });
+      await register({ name: form.name, email: form.email, password: form.password, relationshipMode: form.mode, relationshipType: form.type });
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.details?.details?.[0]?.message || err.message);
@@ -124,6 +125,23 @@ export function Register() {
           <Label>Email</Label>
           <input type="email" required autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="field" maxLength={254} />
         </label>
+        <fieldset>
+          <legend className="mb-2 text-[11px] uppercase tracking-[0.3em] text-ivory/60">Who is the surprise for?</legend>
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Relationship mode">
+            {Object.entries(CONFIG.modes).map(([id, m]) => (
+              <button key={id} type="button" role="radio" aria-checked={form.mode === id} onClick={() => setForm({ ...form, mode: id, type: defaultTypeFor(id) })}
+                className={`min-h-[48px] rounded-xl border px-3 text-sm transition ${form.mode === id ? 'border-gold bg-gold/15 text-gold-light' : 'border-white/15 text-ivory/70'}`}>
+                {id === 'love' ? 'Love' : 'Friendship'}
+              </button>
+            ))}
+          </div>
+          <label className="mt-3 block">
+            <Label>Relationship</Label>
+            <select className="field" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+              {typesFor(form.mode).map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+          </label>
+        </fieldset>
         <PasswordField id="reg-password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} autoComplete="new-password" hint="At least 10 characters, with letters and a number or symbol." />
         <PasswordField id="reg-confirm" label="Repeat password" value={form.confirm} onChange={(v) => setForm({ ...form, confirm: v })} autoComplete="new-password" />
         <ErrorLine>{error}</ErrorLine>

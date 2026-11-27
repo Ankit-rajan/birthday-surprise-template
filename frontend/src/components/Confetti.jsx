@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from '../hooks/SiteConfig.jsx';
 import { useSiteFx } from '../hooks/SiteFx.jsx';
 
 const COLORS = ['#ecd9b0', '#d4b483', '#f4cfd3', '#e8a3b0', '#b3294f', '#fff8ec'];

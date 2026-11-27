@@ -2,13 +2,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useVault } from '../../hooks/VaultContext.jsx';
 import LockScreen from './LockScreen.jsx';
 import UnlockedVault from './UnlockedVault.jsx';
+import { useCopy } from '../../hooks/SiteConfig.jsx';
 
 export default function VaultSection({ site }) {
   const vault = useVault();
+  const t = useCopy();
   const unlocked = vault.status === 'unlocked';
 
   return (
-    <section id="vault" className="relative bg-gradient-to-b from-burgundy-dark to-burgundy-deep" aria-label="Private love vault">
+    <section id="vault" className="relative bg-gradient-to-b from-burgundy-dark to-burgundy-deep" aria-label={t('vaultAria')}>
       <AnimatePresence mode="wait" initial={false}>
         {unlocked ? (
           <motion.div key="open" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>

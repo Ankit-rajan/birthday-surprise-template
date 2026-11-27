@@ -4,6 +4,7 @@ import { Check, Circle, Copy, ExternalLink, Eye, Globe, Sparkles } from 'lucide-
 import { api } from '../../services/api.js';
 import { useAuth } from '../../hooks/AuthContext.jsx';
 import { PageTitle, Card } from './DashboardLayout.jsx';
+import PublicLink from '../../components/PublicLink.jsx';
 import { Status } from '../../components/dashboard/useApiCall.jsx';
 
 const mb = (b) => (b / 1024 / 1024).toFixed(b > 10 * 1024 * 1024 ? 0 : 1);
@@ -66,7 +67,6 @@ export default function Overview() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
-  const [copied, setCopied] = useState(false);
 
   const apply = useCallback((d) => {
     setData(d);
@@ -80,16 +80,6 @@ export default function Overview() {
   if (!data) return <p className="text-ivory/60" role="status">{error || 'Loading your dashboard\u2026'}</p>;
 
   const url = `${window.location.origin}${data.publicPath}`;
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      window.prompt('Copy your link:', url);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const run = async (fn) => {
     setBusy(true);
     setNotice('');
@@ -148,14 +138,7 @@ export default function Overview() {
           </div>
 
           <div className="mb-6 rounded-xl border border-gold/25 bg-black/20 p-4">
-            <p className="mb-2 text-xs uppercase tracking-widest text-ivory/50">Share this link</p>
-            <div className="flex flex-wrap items-center gap-3">
-              <code className="min-w-0 flex-1 break-all text-sm text-gold-light">{url}</code>
-              <button className="btn-ghost !py-2" onClick={copy}><Copy size={15} className="mr-2" aria-hidden="true" />{copied ? 'Copied!' : 'Copy link'}</button>
-              {data.published && (
-                <a href={url} target="_blank" rel="noopener noreferrer" className="btn-ghost !py-2"><ExternalLink size={15} className="mr-2" aria-hidden="true" />Open</a>
-              )}
-            </div>
+            <PublicLink url={url} canOpen={data.published} />
             {!data.published && <p className="mt-2 text-xs text-ivory/50">The link works once you publish. Until then, only you can see the page.</p>}
           </div>
 

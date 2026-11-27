@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { DEFAULT_SITE } from '../services/defaults.js';
+import { FEATURE_KEYS } from '../services/siteConfig/siteConfig.js';
 
 const { ObjectId } = mongoose.Schema.Types;
 const d = DEFAULT_SITE;
@@ -45,6 +46,29 @@ const siteContentSchema = new mongoose.Schema(
       title: { type: String, default: d.musicTitle },
       asset: { type: ObjectId, ref: 'MediaAsset', default: null },
     },
+    // Universal builder. All optional: a site saved before these existed has none of them and renders as Love Mode / classic look.
+    relationship: {
+      mode: { type: String, enum: ['love', 'friendship'] },
+      type: { type: String, maxlength: 40 },
+    },
+    // Only switches the owner has touched are stored; everything else follows the registry default (siteConfig.json).
+    features: Object.fromEntries(FEATURE_KEYS.map((k) => [k, { type: Boolean }])),
+    appearance: {
+      theme: { type: String, maxlength: 40, default: null },
+      primaryColor: { type: String, default: null },
+      secondaryColor: { type: String, default: null },
+      backgroundColor: { type: String, default: null },
+      textColor: { type: String, default: null },
+      buttonColor: { type: String, default: null },
+      font: { type: String, maxlength: 40, default: null },
+    },
+    // Only the labels the owner rewrote. Everything else comes from the relationship mode.
+    copyOverrides: { type: Map, of: String, default: undefined },
+    // Optional password for the whole page (feature "passwordProtection").
+    sitePasswordHash: { type: String, default: null, select: false },
+    sitePasswordSet: { type: Boolean, default: false },
+    siteFailedAttempts: { type: Number, default: 0, select: false },
+    siteLockedUntil: { type: Date, default: null, select: false },
     // Look and feel: cake, falling petals, confetti and the built-in celebration sounds.
     settings: {
       cake: {
