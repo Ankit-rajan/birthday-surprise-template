@@ -29,11 +29,13 @@ const fromLines = (s) => s.split('\n').map((l) => l.trim()).filter(Boolean);
 
 export default function ContentTab({ onExpired }) {
   const [form, setForm] = useState(null);
+  const [friend, setFriend] = useState(false);
   const { busy, error, ok, run } = useApiCall(onExpired);
 
   useEffect(() => {
     run(() => api.app.getContent(), '').then((c) => {
       if (!c) return;
+      setFriend(c.relationship?.mode === 'friendship');
       setForm({
         ...Object.fromEntries(TEXT_FIELDS.map(([k]) => [k, k === 'musicTitle' ? c.music.title : c[k]])),
         birthdayWishes: toLines(c.birthdayWishes),
@@ -79,7 +81,7 @@ export default function ContentTab({ onExpired }) {
       </section>
 
       <section>
-        <h2 className="mb-3 font-serif text-2xl text-ivory">20 reasons I love you</h2>
+        <h2 className="mb-3 font-serif text-2xl text-ivory">{friend ? '20 reasons you\u2019re a great friend' : '20 reasons I love you'}</h2>
         <div className="grid gap-3 md:grid-cols-2">
           {form.reasons.map((r, i) => (
             <label key={i} className="block text-xs text-ivory/50">
@@ -96,7 +98,7 @@ export default function ContentTab({ onExpired }) {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <h2 className="font-serif text-2xl text-ivory md:col-span-2">Our future (one item per line)</h2>
+        <h2 className="font-serif text-2xl text-ivory md:col-span-2">{friend ? 'Our plans (one item per line)' : 'Our future (one item per line)'}</h2>
         {LISTS.map(([k, label]) => (
           <label key={k} className="block text-xs uppercase tracking-widest text-ivory/60">
             {label}
