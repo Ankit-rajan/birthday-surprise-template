@@ -3,6 +3,21 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --c-midnight: 11 7 9;
+    --c-burgundy: 90 15 35;
+    --c-burgundy-deep: 58 10 23;
+    --c-burgundy-dark: 36 6 16;
+    --c-burgundy-soft: 123 26 53;
+    --c-gold: 212 180 131;
+    --c-gold-light: 236 217 176;
+    --c-gold-dark: 176 141 87;
+    --c-ivory: 250 244 232;
+    --c-cream: 255 248 236;
+    --c-btn: 212 180 131;
+    --c-btn-light: 236 217 176;
+    --c-btn-text: 36 6 16;
+  }
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
@@ -21,10 +36,10 @@
     font-weight: 500;
   }
   ::selection {
-    background: rgba(212, 180, 131, 0.35);
+    background: rgb(var(--c-gold, 212 180 131) / 0.35);
   }
   :focus-visible {
-    outline: 2px solid #d4b483;
+    outline: 2px solid rgb(var(--c-gold, 212 180 131));
     outline-offset: 3px;
     border-radius: 6px;
   }
@@ -48,7 +63,7 @@
 
 @layer components {
   .btn-gold {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-light to-gold px-7 py-3.5 text-[13px] font-medium uppercase tracking-[0.22em] text-burgundy-dark shadow-glow transition duration-300 hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-b from-btn-light to-btn px-7 py-3.5 text-[13px] font-medium uppercase tracking-[0.22em] text-btn-text shadow-glow transition duration-300 hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-full border border-gold/50 px-6 py-3 text-xs font-medium uppercase tracking-[0.2em] text-gold-light transition duration-300 hover:bg-gold/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
@@ -97,3 +112,12 @@
     display: none;
   }
 }
+@keyframes floaty-up {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-110vh) rotate(25deg); opacity: 0; }
+}
+.floaty { animation: floaty-up linear infinite; will-change: transform, opacity; }
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+.skeleton { position: relative; overflow: hidden; background: rgb(var(--c-burgundy-deep, 58 10 23) / 0.4); }
+.skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.08), transparent); animation: shimmer 1.4s infinite; }

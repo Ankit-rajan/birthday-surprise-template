@@ -4,17 +4,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        burgundy: { DEFAULT: '#5a0f23', deep: '#3a0a17', dark: '#240610', soft: '#7b1a35' },
-        midnight: '#0b0709',
-        gold: { DEFAULT: '#d4b483', light: '#ecd9b0', dark: '#b08d57' },
-        ivory: '#faf4e8',
-        cream: '#fff8ec',
+        // Colours read CSS variables (set per page by the theme, see src/config/siteConfig themeVars); the fallbacks are the classic look.
+        burgundy: {
+          DEFAULT: 'rgb(var(--c-burgundy, 90 15 35) / <alpha-value>)',
+          deep: 'rgb(var(--c-burgundy-deep, 58 10 23) / <alpha-value>)',
+          dark: 'rgb(var(--c-burgundy-dark, 36 6 16) / <alpha-value>)',
+          soft: 'rgb(var(--c-burgundy-soft, 123 26 53) / <alpha-value>)',
+        },
+        midnight: 'rgb(var(--c-midnight, 11 7 9) / <alpha-value>)',
+        gold: {
+          DEFAULT: 'rgb(var(--c-gold, 212 180 131) / <alpha-value>)',
+          light: 'rgb(var(--c-gold-light, 236 217 176) / <alpha-value>)',
+          dark: 'rgb(var(--c-gold-dark, 176 141 87) / <alpha-value>)',
+        },
+        ivory: 'rgb(var(--c-ivory, 250 244 232) / <alpha-value>)',
+        cream: 'rgb(var(--c-cream, 255 248 236) / <alpha-value>)',
         blush: { DEFAULT: '#f4cfd3', deep: '#e8a3b0' },
+        btn: {
+          DEFAULT: 'rgb(var(--c-btn, 212 180 131) / <alpha-value>)',
+          light: 'rgb(var(--c-btn-light, 236 217 176) / <alpha-value>)',
+          text: 'rgb(var(--c-btn-text, 36 6 16) / <alpha-value>)',
+        },
       },
       fontFamily: {
-        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
-        script: ['"Great Vibes"', 'cursive'],
-        hand: ['Caveat', 'cursive'],
+        serif: ['var(--font-serif, "Cormorant Garamond")', 'Georgia', 'serif'],
+        script: ['var(--font-script, "Great Vibes")', 'cursive'],
+        hand: ['var(--font-hand, Caveat)', 'cursive'],
         sans: ['Jost', 'system-ui', 'sans-serif'],
       },
       boxShadow: {

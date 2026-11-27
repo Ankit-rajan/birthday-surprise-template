@@ -1,0 +1,931 @@
+{
+  "_note": "SINGLE SOURCE OF TRUTH for relationship modes, the feature registry, themes, fonts and section copy. This exact file also lives in frontend/src/config/siteConfig/ (they are deployed separately, so it is duplicated; backend/tests/siteConfig.test.js fails if the two copies differ). To add a feature: add an entry to `features`, gate its rendering in BirthdaySite, and copy the file.",
+  "modes": {
+    "love": {
+      "label": "Love Mode",
+      "description": "A romantic surprise for a partner.",
+      "defaultType": "partner",
+      "types": [
+        {
+          "id": "boyfriend",
+          "label": "Boyfriend",
+          "address": "my love"
+        },
+        {
+          "id": "girlfriend",
+          "label": "Girlfriend",
+          "address": "my love"
+        },
+        {
+          "id": "husband",
+          "label": "Husband",
+          "address": "my love"
+        },
+        {
+          "id": "wife",
+          "label": "Wife",
+          "address": "my love"
+        },
+        {
+          "id": "partner",
+          "label": "Partner",
+          "address": "my love"
+        },
+        {
+          "id": "fiance",
+          "label": "Fiancé",
+          "address": "my love"
+        },
+        {
+          "id": "fiancee",
+          "label": "Fiancée",
+          "address": "my love"
+        }
+      ]
+    },
+    "friendship": {
+      "label": "Friendship Mode",
+      "description": "A warm, funny surprise for a friend.",
+      "defaultType": "best-friend",
+      "types": [
+        {
+          "id": "best-friend",
+          "label": "Best Friend",
+          "address": "best friend"
+        },
+        {
+          "id": "bestie",
+          "label": "Bestie",
+          "address": "bestie"
+        },
+        {
+          "id": "male-best-friend",
+          "label": "Male Best Friend",
+          "address": "best friend"
+        },
+        {
+          "id": "female-best-friend",
+          "label": "Female Best Friend",
+          "address": "best friend"
+        },
+        {
+          "id": "childhood-friend",
+          "label": "Childhood Friend",
+          "address": "oldest friend"
+        },
+        {
+          "id": "school-friend",
+          "label": "School Friend",
+          "address": "school buddy"
+        },
+        {
+          "id": "college-friend",
+          "label": "College Friend",
+          "address": "college buddy"
+        },
+        {
+          "id": "long-distance-friend",
+          "label": "Long-Distance Friend",
+          "address": "faraway friend"
+        },
+        {
+          "id": "brother-like-friend",
+          "label": "Brother-like Friend",
+          "address": "brother"
+        },
+        {
+          "id": "sister-like-friend",
+          "label": "Sister-like Friend",
+          "address": "sister"
+        }
+      ]
+    }
+  },
+  "categories": [
+    {
+      "id": "main",
+      "label": "Main Experience",
+      "description": "The big building blocks of the page."
+    },
+    {
+      "id": "celebration",
+      "label": "Birthday Celebration",
+      "description": "The cake, candles and celebration effects."
+    },
+    {
+      "id": "memories",
+      "label": "Memories & Gallery",
+      "description": "Photos, videos, stories and special moments."
+    },
+    {
+      "id": "letters",
+      "label": "Letters & Messages",
+      "description": "Letters, sealed notes and secret messages."
+    },
+    {
+      "id": "music",
+      "label": "Music & Sounds",
+      "description": "The song and every sound on the page."
+    },
+    {
+      "id": "private",
+      "label": "Private Features",
+      "description": "The password-protected secret area and page lock."
+    },
+    {
+      "id": "visual",
+      "label": "Visual Effects",
+      "description": "Animation and atmosphere."
+    },
+    {
+      "id": "display",
+      "label": "Display Settings",
+      "description": "Small things that change how the page looks."
+    }
+  ],
+  "features": [
+    {
+      "key": "envelope",
+      "category": "main",
+      "label": "Opening Envelope",
+      "description": "The sealed envelope visitors tap to open the surprise.",
+      "default": true
+    },
+    {
+      "key": "hero",
+      "category": "main",
+      "label": "Hero Section",
+      "description": "Their name, photo and the first screen after the envelope.",
+      "default": true
+    },
+    {
+      "key": "greeting",
+      "category": "main",
+      "label": "Birthday Greeting",
+      "description": "The \"Happy birthday\" line above their name.",
+      "default": true,
+      "requires": [
+        "hero"
+      ]
+    },
+    {
+      "key": "introMessage",
+      "category": "main",
+      "label": "Introductory Message",
+      "description": "Your opening message under their photo.",
+      "default": true,
+      "requires": [
+        "hero"
+      ]
+    },
+    {
+      "key": "countdown",
+      "category": "main",
+      "label": "Birthday Countdown",
+      "description": "Days, hours, minutes and seconds until the birthday.",
+      "default": true,
+      "requires": [
+        "hero"
+      ]
+    },
+    {
+      "key": "closing",
+      "category": "main",
+      "label": "Closing Section",
+      "description": "The final photo, quote and message at the end of the page.",
+      "default": true
+    },
+    {
+      "key": "footer",
+      "category": "main",
+      "label": "Footer",
+      "description": "The small line at the very bottom of the page.",
+      "default": true
+    },
+    {
+      "key": "cake",
+      "category": "celebration",
+      "label": "Birthday Cake",
+      "description": "The cake with candles.",
+      "default": true,
+      "customize": "cake"
+    },
+    {
+      "key": "candles",
+      "category": "celebration",
+      "label": "Candle Blow Interaction",
+      "description": "Make a wish and blow out the candles. Off keeps a still, lit cake.",
+      "default": true,
+      "requires": [
+        "cake"
+      ]
+    },
+    {
+      "key": "celebrationMessages",
+      "category": "celebration",
+      "label": "Special Celebration Messages",
+      "description": "The wish prompt and the message after the candles go out.",
+      "default": true,
+      "requires": [
+        "cake",
+        "candles"
+      ]
+    },
+    {
+      "key": "celebrationEffects",
+      "category": "celebration",
+      "label": "Celebration Effects",
+      "description": "Master switch for confetti and fireworks.",
+      "default": true,
+      "requires": [
+        "cake",
+        "candles"
+      ]
+    },
+    {
+      "key": "confetti",
+      "category": "celebration",
+      "label": "Confetti",
+      "description": "Bursts of confetti when the candles are blown out.",
+      "default": true,
+      "requires": [
+        "celebrationEffects"
+      ]
+    },
+    {
+      "key": "fireworks",
+      "category": "celebration",
+      "label": "Fireworks",
+      "description": "Sparkling fireworks when the candles are blown out.",
+      "default": false,
+      "requires": [
+        "celebrationEffects"
+      ]
+    },
+    {
+      "key": "petals",
+      "category": "celebration",
+      "label": "Petal Animation",
+      "description": "Soft petals drifting across the page.",
+      "default": true
+    },
+    {
+      "key": "birthdayWishes",
+      "category": "celebration",
+      "label": "Birthday Wishes",
+      "description": "The wishes that rotate under the introductory message.",
+      "default": true,
+      "requires": [
+        "hero"
+      ]
+    },
+    {
+      "key": "gallery",
+      "category": "memories",
+      "label": "Photo Gallery",
+      "description": "The wall of photos with captions (memory cards).",
+      "default": true
+    },
+    {
+      "key": "videoGallery",
+      "category": "memories",
+      "label": "Video Gallery",
+      "description": "Short videos you upload to the gallery.",
+      "default": true
+    },
+    {
+      "key": "timeline",
+      "category": "memories",
+      "label": "Memories Timeline",
+      "description": "Your story as dated chapters.",
+      "default": true
+    },
+    {
+      "key": "flipCards",
+      "category": "memories",
+      "label": "Flip Cards: Reasons & Special Moments",
+      "description": "Twenty tap-to-flip cards.",
+      "default": true
+    },
+    {
+      "key": "future",
+      "category": "memories",
+      "label": "Future Plans",
+      "description": "Places, dreams and promises.",
+      "default": true
+    },
+    {
+      "key": "sharedMemories",
+      "category": "memories",
+      "label": "Shared Memories",
+      "description": "The \"memories not yet made\" card in Future Plans.",
+      "default": true,
+      "requires": [
+        "future"
+      ]
+    },
+    {
+      "key": "letters",
+      "category": "letters",
+      "label": "Letters",
+      "description": "Master switch for every letter on the public page.",
+      "default": true
+    },
+    {
+      "key": "mainLetter",
+      "category": "letters",
+      "label": "Main Letter",
+      "description": "The paper letter inside an envelope.",
+      "default": true,
+      "requires": [
+        "letters"
+      ]
+    },
+    {
+      "key": "openWhenLetters",
+      "category": "letters",
+      "label": "Open When Letters",
+      "description": "Three small sealed letters.",
+      "default": true,
+      "requires": [
+        "letters"
+      ]
+    },
+    {
+      "key": "futureLetter",
+      "category": "letters",
+      "label": "Future Letter",
+      "description": "The letter for much later, in Future Plans.",
+      "default": true,
+      "requires": [
+        "letters",
+        "future"
+      ]
+    },
+    {
+      "key": "secretMessages",
+      "category": "letters",
+      "label": "Secret Messages",
+      "description": "The Secret messages tab in the private area.",
+      "default": true,
+      "requires": [
+        "vault",
+        "privateMessages"
+      ]
+    },
+    {
+      "key": "personalNotes",
+      "category": "letters",
+      "label": "Personal Notes",
+      "description": "The Secret diary tab in the private area.",
+      "default": true,
+      "requires": [
+        "vault",
+        "privateMessages"
+      ]
+    },
+    {
+      "key": "privateLetters",
+      "category": "letters",
+      "label": "Closing Letters",
+      "description": "The Letters for you tab in the private area.",
+      "default": true,
+      "requires": [
+        "vault",
+        "privateMessages"
+      ]
+    },
+    {
+      "key": "music",
+      "category": "music",
+      "label": "Music Player",
+      "description": "Master switch for your own song.",
+      "default": true,
+      "customize": "music"
+    },
+    {
+      "key": "backgroundMusic",
+      "category": "music",
+      "label": "Background Music",
+      "description": "Start the song when the envelope is opened.",
+      "default": true,
+      "requires": [
+        "music"
+      ]
+    },
+    {
+      "key": "musicControls",
+      "category": "music",
+      "label": "Music Controls",
+      "description": "The play and pause button.",
+      "default": true,
+      "requires": [
+        "music"
+      ]
+    },
+    {
+      "key": "celebrationSounds",
+      "category": "music",
+      "label": "Celebration Sounds",
+      "description": "The opening chime, the birthday song and the cheer.",
+      "default": true
+    },
+    {
+      "key": "soundEffects",
+      "category": "music",
+      "label": "Sound Effects",
+      "description": "Small sounds when letters open and cards flip.",
+      "default": true
+    },
+    {
+      "key": "vault",
+      "category": "private",
+      "label": "Secret Vault",
+      "description": "A password-protected private area.",
+      "default": true,
+      "customize": "vault"
+    },
+    {
+      "key": "privateMedia",
+      "category": "private",
+      "label": "Private Photos & Videos",
+      "description": "Master switch for private media in the vault.",
+      "default": true,
+      "requires": [
+        "vault"
+      ]
+    },
+    {
+      "key": "privatePhotos",
+      "category": "private",
+      "label": "Private Photos",
+      "description": "Photos that only open inside the vault.",
+      "default": true,
+      "requires": [
+        "vault",
+        "privateMedia"
+      ]
+    },
+    {
+      "key": "privateVideos",
+      "category": "private",
+      "label": "Private Videos",
+      "description": "Videos that only open inside the vault.",
+      "default": true,
+      "requires": [
+        "vault",
+        "privateMedia"
+      ]
+    },
+    {
+      "key": "privateMessages",
+      "category": "private",
+      "label": "Private Messages",
+      "description": "Master switch for messages, notes and letters in the vault.",
+      "default": true,
+      "requires": [
+        "vault"
+      ]
+    },
+    {
+      "key": "journal",
+      "category": "private",
+      "label": "Shared Journal",
+      "description": "An encrypted journal you both can read.",
+      "default": true,
+      "requires": [
+        "vault"
+      ]
+    },
+    {
+      "key": "passwordProtection",
+      "category": "private",
+      "label": "Password Protection",
+      "description": "Ask for a password before the whole page opens.",
+      "default": false,
+      "customize": "pagePassword"
+    },
+    {
+      "key": "backgroundAnimations",
+      "category": "visual",
+      "label": "Background Animations",
+      "description": "Moving backdrops behind sealed letters.",
+      "default": true
+    },
+    {
+      "key": "floatingElements",
+      "category": "visual",
+      "label": "Floating Elements",
+      "description": "Hearts or stars gently floating up the page.",
+      "default": false
+    },
+    {
+      "key": "animatedTransitions",
+      "category": "visual",
+      "label": "Animated Transitions",
+      "description": "Sections fade and slide in as you scroll, cards flip in 3D.",
+      "default": true
+    },
+    {
+      "key": "cursorEffects",
+      "category": "visual",
+      "label": "Cursor Effects",
+      "description": "A soft sparkle trail that follows the mouse.",
+      "default": false
+    },
+    {
+      "key": "particleEffects",
+      "category": "visual",
+      "label": "Particle Effects",
+      "description": "Twinkling stars in the closing section.",
+      "default": true
+    },
+    {
+      "key": "loadingAnimations",
+      "category": "visual",
+      "label": "Opening & Writing Animations",
+      "description": "The envelope opening, the name appearing letter by letter and letters being typed out.",
+      "default": true
+    },
+    {
+      "key": "showAge",
+      "category": "display",
+      "label": "Show Age",
+      "description": "Show their age on the cake and in the countdown text. Off shows a heart instead.",
+      "default": true
+    },
+    {
+      "key": "navigation",
+      "category": "display",
+      "label": "Navigation Bar",
+      "description": "The menu at the top of the page.",
+      "default": true
+    },
+    {
+      "key": "studioCredit",
+      "category": "display",
+      "label": "Surprise Studio Credit",
+      "description": "The small link at the bottom that invites others to make their own.",
+      "default": true,
+      "requires": [
+        "footer"
+      ]
+    }
+  ],
+  "legacyFeatureSources": {
+    "petals": "settings.effects.petals",
+    "confetti": "settings.effects.confetti",
+    "celebrationSounds": "settings.effects.celebrationSounds",
+    "showAge": "settings.cake.showAge"
+  },
+  "themes": [
+    {
+      "id": "classic",
+      "label": "Classic Burgundy",
+      "modes": [
+        "love",
+        "friendship"
+      ],
+      "legacy": true,
+      "colors": null
+    },
+    {
+      "id": "romantic-pink",
+      "label": "Romantic Pink",
+      "modes": [
+        "love"
+      ],
+      "colors": {
+        "primary": "#f2a7c3",
+        "secondary": "#8f2a5a",
+        "background": "#14060d",
+        "text": "#fff1f5",
+        "button": "#f2a7c3"
+      }
+    },
+    {
+      "id": "rose-gold",
+      "label": "Rose Gold",
+      "modes": [
+        "love"
+      ],
+      "colors": {
+        "primary": "#e8b4a0",
+        "secondary": "#6e3a3a",
+        "background": "#150a0a",
+        "text": "#fdf1ec",
+        "button": "#e8b4a0"
+      }
+    },
+    {
+      "id": "midnight-love",
+      "label": "Midnight Love",
+      "modes": [
+        "love"
+      ],
+      "colors": {
+        "primary": "#9bb4ff",
+        "secondary": "#1f2a6b",
+        "background": "#060814",
+        "text": "#eef1ff",
+        "button": "#9bb4ff"
+      }
+    },
+    {
+      "id": "elegant-red",
+      "label": "Elegant Red",
+      "modes": [
+        "love"
+      ],
+      "colors": {
+        "primary": "#e8c27a",
+        "secondary": "#8b1220",
+        "background": "#120305",
+        "text": "#fbf1e6",
+        "button": "#e8c27a"
+      }
+    },
+    {
+      "id": "soft-lavender",
+      "label": "Soft Lavender",
+      "modes": [
+        "love"
+      ],
+      "colors": {
+        "primary": "#cdb4f6",
+        "secondary": "#4b2f7a",
+        "background": "#0d0816",
+        "text": "#f6f0ff",
+        "button": "#cdb4f6"
+      }
+    },
+    {
+      "id": "playful-yellow",
+      "label": "Playful Yellow",
+      "modes": [
+        "friendship"
+      ],
+      "colors": {
+        "primary": "#ffd23f",
+        "secondary": "#7a4b00",
+        "background": "#140f00",
+        "text": "#fffbe6",
+        "button": "#ffd23f"
+      }
+    },
+    {
+      "id": "sky-blue",
+      "label": "Sky Blue",
+      "modes": [
+        "friendship"
+      ],
+      "colors": {
+        "primary": "#7cc8ff",
+        "secondary": "#12527a",
+        "background": "#041019",
+        "text": "#effaff",
+        "button": "#7cc8ff"
+      }
+    },
+    {
+      "id": "purple-memories",
+      "label": "Purple Memories",
+      "modes": [
+        "friendship"
+      ],
+      "colors": {
+        "primary": "#c9a7ff",
+        "secondary": "#5b2a9e",
+        "background": "#0b0614",
+        "text": "#f5eeff",
+        "button": "#c9a7ff"
+      }
+    },
+    {
+      "id": "retro-friendship",
+      "label": "Retro Friendship",
+      "modes": [
+        "friendship"
+      ],
+      "colors": {
+        "primary": "#ff9f68",
+        "secondary": "#1f6f78",
+        "background": "#0e1417",
+        "text": "#fff3e3",
+        "button": "#ff9f68"
+      }
+    },
+    {
+      "id": "minimal-aesthetic",
+      "label": "Minimal Aesthetic",
+      "modes": [
+        "friendship"
+      ],
+      "colors": {
+        "primary": "#d9d9d9",
+        "secondary": "#2b2b2b",
+        "background": "#0a0a0a",
+        "text": "#f5f5f5",
+        "button": "#f5f5f5"
+      }
+    }
+  ],
+  "fonts": [
+    {
+      "id": "elegant",
+      "label": "Elegant (default)",
+      "serif": "\"Cormorant Garamond\"",
+      "script": "\"Great Vibes\"",
+      "hand": "Caveat",
+      "google": null
+    },
+    {
+      "id": "romantic",
+      "label": "Romantic",
+      "serif": "\"Playfair Display\"",
+      "script": "\"Dancing Script\"",
+      "hand": "Caveat",
+      "google": "family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Dancing+Script:wght@500;700"
+    },
+    {
+      "id": "playful",
+      "label": "Playful",
+      "serif": "Fredoka",
+      "script": "Pacifico",
+      "hand": "\"Patrick Hand\"",
+      "google": "family=Fredoka:wght@400;500;600&family=Pacifico&family=Patrick+Hand"
+    },
+    {
+      "id": "clean",
+      "label": "Clean & modern",
+      "serif": "\"DM Serif Display\"",
+      "script": "Satisfy",
+      "hand": "\"Shadows Into Light\"",
+      "google": "family=DM+Serif+Display:ital@0;1&family=Satisfy&family=Shadows+Into+Light"
+    }
+  ],
+  "copy": {
+    "love": {
+      "introSeal": "{name} ♥",
+      "introButton": "Open your surprise ♡",
+      "introSound": "Turn your sound on ♫",
+      "heroEyebrow": "Happy birthday, {address}!",
+      "countdownToday": "Today is the day. You are {age}!",
+      "countdownEyebrow": "Until you turn {age}",
+      "countdownEyebrowNoAge": "Until your birthday",
+      "cakeEyebrow": "Turning {age}",
+      "cakeEyebrowNoAge": "Make it a good one",
+      "cakeHeading": "Make a wish, {address}.",
+      "galleryEyebrow": "Our little world",
+      "galleryTitle": "Moments I keep close",
+      "gallerySubtitle": "Every picture is a small door back to a day I never want to forget.",
+      "galleryEmpty": "Edit in My Dashboard › My Birthday Website › Gallery. Upload photos here, each with a caption and date. Example: “Our first trip, 2024”. ♡",
+      "galleryAlt": "A memory of us",
+      "videosEyebrow": "Moving moments",
+      "videosTitle": "Little films of us",
+      "videosSubtitle": "A few moments worth pressing play on.",
+      "timelineEyebrow": "Our story",
+      "timelineTitle": "How we became us",
+      "timelineSubtitle": "A few of the chapters, in the order they happened.",
+      "reasonsEyebrow": "Twenty reasons",
+      "reasonsTitle": "Why I love you",
+      "reasonsSubtitle": "Tap a card. There are more reasons than twenty, but these are a start.",
+      "reasonCardLabel": "Reason",
+      "reasonsRevealed": "{n} of {total} revealed",
+      "reasonEmpty": "Coming soon ♡",
+      "letterEyebrow": "For you",
+      "letterTitle": "A letter from my heart",
+      "letterSubtitle": "I wrote this one slowly.",
+      "letterSignature": "Yours, always — {sender}",
+      "letterOpen": "Tap to open",
+      "letterFold": "Fold it away",
+      "openWhenEyebrow": "Read this when",
+      "openWhenTitle": "Little letters, sealed for later",
+      "openWhenSubtitle": "Keep them for the moment you need them.",
+      "openWhenHintMiss": "for the nights you miss me",
+      "openWhenHintSad": "for the heavy days",
+      "openWhenHintHug": "for when words are not enough",
+      "openWhenSeal": "Break the seal",
+      "openWhenSignature": "— {sender}",
+      "futureEyebrow": "Our future",
+      "futureTitle": "Our story is still being written.",
+      "futureSubtitle": "Not a promise of perfection, just of showing up.",
+      "futurePlaces": "Places we want to see",
+      "futureDreams": "Dreams we are building",
+      "futurePromises": "Small promises",
+      "futureMemories": "Memories not yet made",
+      "futureLetterEyebrow": "A letter, for much later",
+      "futureLetterFallback": "To My Future Wife",
+      "futureLetterSubtitle": "Written long before it is needed, and meant to be read slowly.",
+      "futureLetterButton": "Read the letter",
+      "vaultAria": "Private love vault",
+      "vaultEyebrow": "Private love vault",
+      "vaultTitle": "Our Little Secret Place",
+      "vaultSubtitle": "Some memories are just for us.",
+      "vaultWrongPassword": "That is not the password. Try again, my love.",
+      "vaultRoleOwner": "I am {name}",
+      "vaultRoleSender": "I'm her person",
+      "vaultPlaceholder": "Our secret password",
+      "vaultTabMemories": "Private memories",
+      "vaultTabMessages": "Secret messages",
+      "vaultTabDiary": "Secret diary",
+      "vaultTabLetters": "Letters for you",
+      "vaultTabHeart": "Her heart",
+      "heartEyebrow": "Her heart — a space just for you",
+      "heartTitle": "Tell me what’s on your heart ❤️",
+      "heartReader": "him",
+      "footerText": "Made with love, for {name}",
+      "footerCredit": "Create a birthday surprise like this with Surprise Studio",
+      "navHome": "Home",
+      "navGallery": "Our world",
+      "navStory": "Our story",
+      "navReasons": "Reasons",
+      "navLetter": "Letter",
+      "navOpenWhen": "Read when",
+      "navFuture": "Future",
+      "navVault": "Secret place",
+      "countdownTodayNoAge": "Today is the day!"
+    },
+    "friendship": {
+      "introSeal": "{name} ★",
+      "introButton": "Open your surprise ✦",
+      "introSound": "Turn your sound on ♫",
+      "heroEyebrow": "Happy birthday, {address}!",
+      "countdownToday": "Today is the day. You are {age}!",
+      "countdownEyebrow": "Until you turn {age}",
+      "countdownEyebrowNoAge": "Until your birthday",
+      "cakeEyebrow": "Turning {age}",
+      "cakeEyebrowNoAge": "Let’s make it a good one",
+      "cakeHeading": "Make a wish, {address}.",
+      "galleryEyebrow": "Partners in crime",
+      "galleryTitle": "Our Crazy Memories",
+      "gallerySubtitle": "Every photo is a story we will still be laughing about in twenty years.",
+      "galleryEmpty": "Edit in My Dashboard › My Birthday Website › Gallery. Upload photos here, each with a caption and date. Example: “That trip we never planned, 2024”. ★",
+      "galleryAlt": "A memory of us",
+      "videosEyebrow": "Caught on camera",
+      "videosTitle": "Partners in Crime, on Film",
+      "videosSubtitle": "Press play. Try not to laugh.",
+      "timelineEyebrow": "Our story",
+      "timelineTitle": "A Lifetime of Friendship",
+      "timelineSubtitle": "A few of the chapters, in the order they happened.",
+      "reasonsEyebrow": "Twenty reasons",
+      "reasonsTitle": "Why You’re The Best",
+      "reasonsSubtitle": "Tap a card. There are honestly way more than twenty, but we have to start somewhere.",
+      "reasonCardLabel": "Reason",
+      "reasonsRevealed": "{n} of {total} revealed",
+      "reasonEmpty": "Coming soon ★",
+      "letterEyebrow": "To my {address}",
+      "letterTitle": "Thanks For Being There",
+      "letterSubtitle": "I wrote this one properly. Okay, with a few jokes.",
+      "letterSignature": "Your friend, always — {sender}",
+      "letterOpen": "Tap to open",
+      "letterFold": "Fold it away",
+      "openWhenEyebrow": "Read this when",
+      "openWhenTitle": "Little letters, sealed for later",
+      "openWhenSubtitle": "Keep them for the moment you need them.",
+      "openWhenHintMiss": "for when we are far apart",
+      "openWhenHintSad": "for the rough days",
+      "openWhenHintHug": "for when you need a pep talk",
+      "openWhenSeal": "Break the seal",
+      "openWhenSignature": "— {sender}",
+      "futureEyebrow": "What comes next",
+      "futureTitle": "Forever My Bestie",
+      "futureSubtitle": "No big promises. Just that I will always show up.",
+      "futurePlaces": "Trips we are taking",
+      "futureDreams": "Things we will do someday",
+      "futurePromises": "Friend promises",
+      "futureMemories": "Memories we haven’t made yet",
+      "futureLetterEyebrow": "A letter, for much later",
+      "futureLetterFallback": "To Future Us",
+      "futureLetterSubtitle": "Written now, to be read when we are old and still arguing about who is right.",
+      "futureLetterButton": "Read the letter",
+      "vaultAria": "Private vault",
+      "vaultEyebrow": "Private vault",
+      "vaultTitle": "Our Secret Hideout",
+      "vaultSubtitle": "A few things just for the two of us.",
+      "vaultWrongPassword": "That is not the password. Try again, friend.",
+      "vaultRoleOwner": "I am {name}",
+      "vaultRoleSender": "I'm their friend",
+      "vaultPlaceholder": "Our secret password",
+      "vaultTabMemories": "Private memories",
+      "vaultTabMessages": "Secret messages",
+      "vaultTabDiary": "Secret notes",
+      "vaultTabLetters": "Letters for you",
+      "vaultTabHeart": "Our journal",
+      "heartEyebrow": "Our journal — a space just for you",
+      "heartTitle": "Tell me what’s on your mind ✨",
+      "heartReader": "your friend",
+      "footerText": "Made with love (and a lot of inside jokes), for {name}",
+      "footerCredit": "Create a birthday surprise like this with Surprise Studio",
+      "navHome": "Home",
+      "navGallery": "Memories",
+      "navStory": "Our story",
+      "navReasons": "Why you rock",
+      "navLetter": "Letter",
+      "navOpenWhen": "Read when",
+      "navFuture": "Forever",
+      "navVault": "Hideout",
+      "countdownTodayNoAge": "Today is the day!"
+    }
+  }
+}
