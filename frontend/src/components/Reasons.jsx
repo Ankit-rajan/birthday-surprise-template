@@ -1,18 +1,21 @@
 import { useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useReducedMotion } from '../hooks/SiteConfig.jsx';
 import SectionHeading from './SectionHeading.jsx';
 import { pad } from '../utils/format.js';
+import { useCopy, useSfx } from '../hooks/SiteConfig.jsx';
 
 function ReasonCard({ number, text, flipped, onFlip }) {
   const reduce = useReducedMotion();
-  const message = text || 'Coming soon ♡';
+  const t = useCopy();
+  const message = text || t('reasonEmpty');
 
   return (
     <button
       type="button"
       onClick={onFlip}
       aria-pressed={flipped}
-      aria-label={flipped ? `Reason ${number}: ${message}` : `Reveal reason ${number}`}
+      aria-label={flipped ? `${t('reasonCardLabel')} ${number}: ${message}` : `${t('reasonCardLabel')} ${number}`}
       className="group relative aspect-[3/4] w-full text-left [perspective:1000px]"
     >
       <motion.div
@@ -26,7 +29,7 @@ function ReasonCard({ number, text, flipped, onFlip }) {
             reduce && flipped ? 'invisible' : ''
           }`}
         >
-          <span className="eyebrow !tracking-[0.3em]">Reason</span>
+          <span className="eyebrow !tracking-[0.3em]">{t('reasonCardLabel')}</span>
           <span className="gold-text mt-2 font-serif text-6xl">{pad(number)}</span>
           <span aria-hidden="true" className="mt-4 text-gold/70">&#9825;</span>
         </div>
@@ -44,26 +47,27 @@ function ReasonCard({ number, text, flipped, onFlip }) {
 }
 
 export default function Reasons({ reasons }) {
+  const t = useCopy();
+  const sfx = useSfx();
   const [flipped, setFlipped] = useState(() => new Set());
   const toggle = (i) =>
     setFlipped((prev) => {
       const next = new Set(prev);
       if (next.has(i)) next.delete(i);
-      else next.add(i);
+      else {
+        next.add(i);
+        sfx();
+      }
       return next;
     });
 
   return (
     <section id="reasons" className="section-pad bg-gradient-to-b from-burgundy-dark to-midnight">
-      <SectionHeading
-        eyebrow="Twenty reasons"
-        title="Why I love you"
-        subtitle="Tap a card. There are more reasons than twenty, but these are a start."
-      />
+      <SectionHeading eyebrow={t('reasonsEyebrow')} title={t('reasonsTitle')} subtitle={t('reasonsSubtitle')} />
       <p className="-mt-8 mb-10 text-center text-xs uppercase tracking-[0.3em] text-gold/70" aria-live="polite">
-        {flipped.size} of {reasons.length} revealed
+        {t('reasonsRevealed', { n: flipped.size, total: reasons.length })}
       </p>
-      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 md:gap-6">
+      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 md:gap-6">
         {reasons.map((text, i) => (
           <motion.div
             key={i}

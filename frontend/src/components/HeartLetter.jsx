@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import SectionHeading from './SectionHeading.jsx';
 import LetterPaper from './LetterPaper.jsx';
+import { useCopy, useSfx } from '../hooks/SiteConfig.jsx';
 
 /** Animated envelope that opens to reveal a typewritten, handwritten-style letter. */
 export default function HeartLetter({ letter, partnerName }) {
   const [opened, setOpened] = useState(false);
+  const t = useCopy();
+  const sfx = useSfx();
 
   return (
     <section id="letter" className="section-pad bg-midnight">
-      <SectionHeading eyebrow="For you" title="A letter from my heart" subtitle="I wrote this one slowly." />
+      <SectionHeading eyebrow={t('letterEyebrow')} title={t('letterTitle')} subtitle={t('letterSubtitle')} />
 
       <div className="mx-auto max-w-2xl">
         <AnimatePresence mode="wait" initial={false}>
@@ -17,13 +20,16 @@ export default function HeartLetter({ letter, partnerName }) {
             <motion.button
               key="envelope"
               type="button"
-              onClick={() => setOpened(true)}
+              onClick={() => {
+                sfx();
+                setOpened(true);
+              }}
               aria-label="Open the letter"
               exit={{ opacity: 0, y: -20, scale: 0.96 }}
               transition={{ duration: 0.4 }}
               className="group mx-auto block"
             >
-              <div className="relative mx-auto h-52 w-80 transition duration-500 group-hover:-translate-y-1 sm:h-60 sm:w-96">
+              <div className="relative mx-auto h-48 w-[17.5rem] transition duration-500 group-hover:-translate-y-1 sm:h-60 sm:w-96">
                 <div className="absolute inset-0 rounded-md bg-gradient-to-b from-burgundy-soft to-burgundy-deep shadow-soft ring-1 ring-gold/30" />
                 <div className="absolute inset-x-6 top-5 bottom-4 rounded-sm bg-ivory/95" />
                 <div
@@ -36,7 +42,7 @@ export default function HeartLetter({ letter, partnerName }) {
                 />
                 <div className="absolute left-1/2 top-[56%] h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-burgundy-soft to-burgundy-dark shadow-lg ring-2 ring-gold/60" />
               </div>
-              <p className="mt-8 text-xs uppercase tracking-[0.4em] text-gold">Tap to open</p>
+              <p className="mt-8 text-xs uppercase tracking-[0.4em] text-gold">{t('letterOpen')}</p>
             </motion.button>
           ) : (
             <motion.div
@@ -48,12 +54,12 @@ export default function HeartLetter({ letter, partnerName }) {
               <LetterPaper
                 title={letter.title}
                 body={letter.body}
-                signature={`Yours, always — ${partnerName}`}
+                signature={t('letterSignature')}
                 typewriter
               />
               <div className="mt-8 text-center">
                 <button onClick={() => setOpened(false)} className="btn-ghost">
-                  Fold it away
+                  {t('letterFold')}
                 </button>
               </div>
             </motion.div>

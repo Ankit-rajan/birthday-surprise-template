@@ -1,11 +1,13 @@
 import { motion } from 'framer-motion';
 import SectionHeading from './SectionHeading.jsx';
 import { formatDate } from '../utils/format.js';
+import { useCopy } from '../hooks/SiteConfig.jsx';
 
 export default function Timeline({ timeline }) {
+  const t = useCopy();
   return (
     <section id="story" className="section-pad relative bg-burgundy-dark">
-      <SectionHeading eyebrow="Our story" title="How we became us" subtitle="A few of the chapters, in the order they happened." />
+      <SectionHeading eyebrow={t('timelineEyebrow')} title={t('timelineTitle')} subtitle={t('timelineSubtitle')} />
 
       <ol className="relative mx-auto max-w-4xl">
         <span

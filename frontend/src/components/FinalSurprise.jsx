@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Petals from './Petals.jsx';
+import { useSiteFx } from '../hooks/SiteFx.jsx';
 
 export default function FinalSurprise({ site }) {
+  const fx = useSiteFx();
   const stars = useMemo(
     () =>
       Array.from({ length: 70 }, () => ({
@@ -16,9 +18,9 @@ export default function FinalSurprise({ site }) {
   );
 
   return (
-    <section id="finale" className="relative overflow-hidden bg-[radial-gradient(ellipse_at_50%_0%,#2a0a16,#0b0709_70%)] px-5 py-28 text-center md:py-40">
+    <section id="finale" className="relative overflow-hidden bg-[radial-gradient(ellipse_at_50%_0%,rgb(var(--c-burgundy-deep)),rgb(var(--c-midnight))_70%)] px-5 py-28 text-center md:py-40">
       <div aria-hidden="true" className="absolute inset-0">
-        {stars.map((s, i) => (
+        {fx.background && stars.map((s, i) => (
           <span
             key={i}
             className="absolute animate-twinkle rounded-full bg-gold-light"
@@ -46,7 +48,7 @@ export default function FinalSurprise({ site }) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 1.4 }}
-          className="font-serif text-4xl italic leading-tight text-ivory md:text-6xl"
+          className="break-words font-serif text-[2.1rem] italic leading-tight text-ivory sm:text-4xl md:text-6xl"
         >
           {site.finalQuote}
         </motion.p>
@@ -58,7 +60,7 @@ export default function FinalSurprise({ site }) {
           transition={{ duration: 1.6, delay: 1.2 }}
         >
           <div className="mx-auto my-10 h-px w-24 bg-gradient-to-r from-transparent via-gold to-transparent" />
-          <p className="gold-text font-script text-5xl leading-tight md:text-7xl">{site.finalMessage}</p>
+          <p className="gold-text break-words font-script text-[2.6rem] leading-tight sm:text-5xl md:text-7xl">{site.finalMessage}</p>
         </motion.div>
       </div>
     </section>
